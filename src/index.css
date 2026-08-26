@@ -1,0 +1,119 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+  body {
+    background-color: #ffffff;
+    color: #1A2942;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+  }
+}
+
+/* 1. Hero Product Gentle Floating Animation (5s, 8-12px, soft shadow breathing) */
+@keyframes heroProductFloat {
+  0%, 100% {
+    transform: translateY(0px);
+    filter: drop-shadow(0 20px 25px rgba(27, 42, 74, 0.08));
+  }
+  50% {
+    transform: translateY(-10px);
+    filter: drop-shadow(0 30px 35px rgba(27, 42, 74, 0.14));
+  }
+}
+
+/* 2. Lady Product Image Slow Ken Burns Zoom (10s, 1 to 1.03) */
+@keyframes kenBurnsSlow {
+  0% {
+    transform: scale(1);
+  }
+  100% {
+    transform: scale(1.03);
+  }
+}
+
+/* 3. Soft Staggered Reveal Slide-Up */
+@keyframes fadeSlideUp {
+  0% {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0px);
+  }
+}
+
+/* 4. Soft Fade-In */
+@keyframes fadeIn {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+/* 5. Liquid Wave Flow & Ultra-Slow Ambient Rotation */
+@keyframes waveFlow {
+  0%, 100% { transform: translateX(0) scaleY(1); }
+  50% { transform: translateX(-8px) scaleY(1.05); }
+}
+
+@keyframes spinUltraSlow {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes floatSmooth {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-8px); }
+}
+
+.animate-hero-float {
+  animation: heroProductFloat 5s ease-in-out infinite;
+}
+
+.animate-ken-burns {
+  animation: kenBurnsSlow 10s ease-in-out infinite alternate;
+}
+
+.animate-reveal-up {
+  animation: fadeSlideUp 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.6s ease-out forwards;
+}
+
+.animate-wave-flow {
+  animation: waveFlow 8s ease-in-out infinite;
+}
+
+.animate-spin-ultra-slow {
+  animation: spinUltraSlow 48s linear infinite;
+}
+
+.animate-float-smooth {
+  animation: floatSmooth 4.5s ease-in-out infinite;
+}
+
+/* Stagger Delay Classes */
+.delay-100 { animation-delay: 100ms; }
+.delay-200 { animation-delay: 200ms; }
+.delay-350 { animation-delay: 350ms; }
+.delay-400 { animation-delay: 400ms; }
+.delay-500 { animation-delay: 500ms; }
+.delay-650 { animation-delay: 650ms; }
+.delay-700 { animation-delay: 700ms; }
+.delay-800 { animation-delay: 800ms; }
+.delay-950 { animation-delay: 950ms; }
+
+/* Custom Water Reflection Pattern */
+.bg-water-ripple {
+  background: radial-gradient(circle at 50% 50%, rgba(227, 240, 252, 0.8) 0%, rgba(235, 244, 254, 0.4) 50%, rgba(255, 255, 255, 0) 100%),
+              linear-gradient(180deg, #F4F9FF 0%, #E5F1FC 100%);
+}
