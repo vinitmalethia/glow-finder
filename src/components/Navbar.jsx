@@ -25,7 +25,7 @@ export default function Navbar({ activeTab, onSelectTab, cartCount, onOpenCart }
           <img
             src="/assets/glow-finder-logo-official.png"
             alt="Glow Finder TriActive Brightening Serum Official Logo"
-            className="h-10 sm:h-12 w-auto object-contain transition-transform duration-300 group-hover:scale-102"
+            className="h-12 sm:h-14 w-auto object-contain transition-transform duration-300 group-hover:scale-102"
           />
         </button>
 
