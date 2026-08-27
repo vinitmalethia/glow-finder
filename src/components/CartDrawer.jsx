@@ -21,7 +21,7 @@ export default function CartDrawer({
     address: '',
     city: '',
     pincode: '',
-    paymentMethod: 'cod'
+    paymentMethod: 'upi'
   });
   const [orderId, setOrderId] = useState('');
 
@@ -389,46 +389,27 @@ export default function CartDrawer({
                   </div>
                 </div>
 
-                {/* Payment Method Selector */}
+                {/* Payment Method Selector - UPI / Online Pay Only */}
                 <div className="space-y-2 pt-2 border-t border-slate-100">
                   <span className="text-[11px] font-bold text-glow-navy uppercase tracking-wider block">
                     Payment Method
                   </span>
                   
-                  <div className="grid grid-cols-2 gap-2">
-                    <label className={`p-3 rounded-xl border flex flex-col gap-1 cursor-pointer transition-all ${
-                      formData.paymentMethod === 'cod' 
-                        ? 'border-glow-orange bg-amber-50/50 ring-1 ring-glow-orange' 
-                        : 'border-slate-200 bg-white'
-                    }`}>
-                      <input
-                        type="radio"
-                        name="paymentMethod"
-                        value="cod"
-                        checked={formData.paymentMethod === 'cod'}
-                        onChange={(e) => setFormData({ ...formData, paymentMethod: e.target.value })}
-                        className="sr-only"
-                      />
-                      <span className="text-xs font-bold text-glow-navy">Cash on Delivery</span>
-                      <span className="text-[10px] text-slate-500">Pay cash at doorstep</span>
-                    </label>
-
-                    <label className={`p-3 rounded-xl border flex flex-col gap-1 cursor-pointer transition-all ${
-                      formData.paymentMethod === 'upi' 
-                        ? 'border-glow-orange bg-amber-50/50 ring-1 ring-glow-orange' 
-                        : 'border-slate-200 bg-white'
-                    }`}>
-                      <input
-                        type="radio"
-                        name="paymentMethod"
-                        value="upi"
-                        checked={formData.paymentMethod === 'upi'}
-                        onChange={(e) => setFormData({ ...formData, paymentMethod: e.target.value })}
-                        className="sr-only"
-                      />
-                      <span className="text-xs font-bold text-glow-navy">UPI / Online Pay</span>
-                      <span className="text-[10px] text-slate-500">GPay, PhonePe, Cards</span>
-                    </label>
+                  <div className="p-3.5 rounded-xl border border-glow-orange bg-amber-50/40 ring-1 ring-glow-orange flex items-start gap-3">
+                    <div className="w-5 h-5 rounded-full bg-glow-orange text-white flex items-center justify-center shrink-0 mt-0.5">
+                      <CheckCircle2 className="w-3.5 h-3.5" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-glow-navy">UPI / Online Payment</span>
+                        <span className="text-[10px] font-bold text-green-700 bg-green-100 px-2 py-0.5 rounded-full">
+                          Instant & Safe
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-slate-500 mt-0.5">
+                        Google Pay, PhonePe, Paytm, Debit/Credit Cards & NetBanking
+                      </p>
+                    </div>
                   </div>
                 </div>
 
@@ -495,8 +476,8 @@ export default function CartDrawer({
                   <span className="font-semibold text-glow-navy">₹{deliveryFee}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-slate-500">Payment:</span>
-                  <span className="font-semibold text-glow-navy uppercase">{formData.paymentMethod}</span>
+                  <span className="text-slate-500">Payment Mode:</span>
+                  <span className="font-semibold text-glow-navy">UPI / Online Payment</span>
                 </div>
                 <div className="flex justify-between pt-2 border-t border-slate-200/80 font-bold text-sm">
                   <span>Amount to Pay:</span>
