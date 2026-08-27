@@ -7,7 +7,7 @@ import {
   DollarSign, TrendingUp, RefreshCw, Shield, MapPin, Phone, Mail
 } from 'lucide-react';
 import brandLogo from '../assets/glow-finder-logo.png';
-import { collection, getDocs, updateDoc, doc, query, orderBy } from 'firebase/firestore';
+import { collection, onSnapshot, updateDoc, doc, query, orderBy, getDocs, where } from 'firebase/firestore';
 import { db } from '../firebase/config';
 
 export default function AdminDashboard({ onLogout, onNavigateHome, bannerText, onUpdateBanner }) {
@@ -32,80 +32,14 @@ export default function AdminDashboard({ onLogout, onNavigateHome, bannerText, o
     }
   ]);
 
-  // Initial Sample Orders + Real Firestore Orders
-  const [orders, setOrders] = useState([
-    {
-      id: 'GF1001',
-      orderNumber: '#GF1001',
-      customerName: 'Rahul Kumar',
-      phone: '9876543210',
-      address: 'Flat 402, Sunshine Heights, Andheri West, Mumbai, MH - 400053',
-      productName: 'TriActive Serum',
-      quantity: 1,
-      finalTotal: 559,
-      paymentMethod: 'UPI / Online',
-      status: 'Pending',
-      date: '01 Jun, 2024 • 10:30 AM'
-    },
-    {
-      id: 'GF1002',
-      orderNumber: '#GF1002',
-      customerName: 'Aman Verma',
-      phone: '9123456780',
-      address: 'House No 12, Sector 15, Gurgaon, HR - 122001',
-      productName: 'TriActive Serum',
-      quantity: 2,
-      finalTotal: 1118,
-      paymentMethod: 'UPI / Online',
-      status: 'Confirmed',
-      date: '01 Jun, 2024 • 09:15 AM'
-    },
-    {
-      id: 'GF1003',
-      orderNumber: '#GF1003',
-      customerName: 'Neha Sharma',
-      phone: '9988776655',
-      address: 'B-14, Green Park Extension, New Delhi - 110016',
-      productName: 'TriActive Serum',
-      quantity: 1,
-      finalTotal: 559,
-      paymentMethod: 'UPI / Online',
-      status: 'Packed',
-      date: '31 May, 2024 • 08:45 PM'
-    },
-    {
-      id: 'GF1004',
-      orderNumber: '#GF1004',
-      customerName: 'Vishal Singh',
-      phone: '8877665544',
-      address: 'Plot 88, Jubilee Hills, Hyderabad, TS - 500033',
-      productName: 'TriActive Serum',
-      quantity: 3,
-      finalTotal: 1677,
-      paymentMethod: 'UPI / Online',
-      status: 'Shipped',
-      date: '31 May, 2024 • 06:20 PM'
-    },
-    {
-      id: 'GF1005',
-      orderNumber: '#GF1005',
-      customerName: 'Pooja Rani',
-      phone: '7766554433',
-      address: 'Flat 10B, Silver Oak Residency, Koramangala, Bengaluru, KA - 560034',
-      productName: 'TriActive Serum',
-      quantity: 1,
-      finalTotal: 559,
-      paymentMethod: 'UPI / Online',
-      status: 'Delivered',
-      date: '30 May, 2024 • 04:10 PM'
-    }
-  ]);
+  // Real Firestore Orders (Real-time Live Sync)
+  const [orders, setOrders] = useState([]);
 
   // Coupons State
   const [coupons, setCoupons] = useState([
-    { code: 'GLOW5', discount: '5% OFF', usageCount: 42, active: true },
-    { code: 'GLOW20', discount: '20% OFF', usageCount: 128, active: true },
-    { code: 'FIRSTGLOW', discount: '₹140 OFF', usageCount: 65, active: true }
+    { code: 'GLOW5', discount: '5% OFF', usageCount: 0, active: true },
+    { code: 'GLOW20', discount: '20% OFF', usageCount: 0, active: true },
+    { code: 'FIRSTGLOW', discount: '₹140 OFF', usageCount: 0, active: true }
   ]);
   const [newCouponCode, setNewCouponCode] = useState('');
   const [newCouponDiscount, setNewCouponDiscount] = useState('');
@@ -115,58 +49,147 @@ export default function AdminDashboard({ onLogout, onNavigateHome, bannerText, o
     bannerText || "Special Discount: Get Glow Finder at ₹559 (M.R.P. ₹699) + ₹39 Delivery Fee!"
   );
 
-  // Fetch Firestore Live Orders on mount
+  // Real-time Live Orders Listener (Firestore + Instant Local Storage Sync)
   useEffect(() => {
-    async function fetchFirestoreOrders() {
+    function getLocalOrders() {
       try {
-        const q = query(collection(db, 'orders'));
-        const querySnapshot = await getDocs(q);
-        const liveOrders = [];
-        querySnapshot.forEach((doc) => {
-          const data = doc.data();
-          liveOrders.push({
-            id: doc.id,
-            orderNumber: data.orderNumber || `#${doc.id.slice(0, 6)}`,
-            customerName: data.customerName || 'Customer',
-            phone: data.phone || 'N/A',
-            address: data.address ? `${data.address}, ${data.city || ''} - ${data.pincode || ''}` : 'Standard Address',
-            productName: data.items?.[0]?.name || 'TriActive Serum',
-            quantity: data.totalQuantity || data.items?.length || 1,
-            finalTotal: data.finalTotal || 598,
-            paymentMethod: data.paymentMethod || 'UPI / Online',
-            status: data.status || 'Pending',
-            date: data.createdAt?.toDate ? data.createdAt.toDate().toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' }) : 'Recent'
-          });
-        });
-        if (liveOrders.length > 0) {
-          // Merge with sample orders without duplicates
-          setOrders(prev => {
-            const existingIds = new Set(liveOrders.map(o => o.orderNumber));
-            const filteredSample = prev.filter(o => !existingIds.has(o.orderNumber));
-            return [...liveOrders, ...filteredSample];
-          });
-        }
-      } catch (err) {
-        console.warn("Could not load from Firestore, using local data:", err);
+        return JSON.parse(localStorage.getItem('glowfinder_orders') || '[]');
+      } catch (e) {
+        return [];
       }
     }
-    fetchFirestoreOrders();
+
+    // Load initial local orders immediately (0ms delay)
+    const initialLocal = getLocalOrders();
+    if (initialLocal.length > 0) {
+      setOrders(initialLocal);
+    }
+
+    let unsubscribe = () => {};
+    try {
+      const q = query(collection(db, 'orders'), orderBy('createdAt', 'desc'));
+      unsubscribe = onSnapshot(q, (querySnapshot) => {
+        const liveOrders = [];
+        querySnapshot.forEach((docSnap) => {
+          const data = docSnap.data();
+          liveOrders.push({
+            id: docSnap.id,
+            orderNumber: data.orderNumber || `#${docSnap.id.slice(0, 6)}`,
+            customerName: data.customerName || data.name || 'Customer',
+            phone: data.phone || 'N/A',
+            email: data.userEmail || data.email || 'N/A',
+            address: data.address ? `${data.address}${data.city && !data.address.includes(data.city) ? ', ' + data.city : ''}${data.pincode && !data.address.includes(data.pincode) ? ' - ' + data.pincode : ''}` : 'Standard Address',
+            rawAddress: data.rawAddress || data.address || '',
+            city: data.city || '',
+            pincode: data.pincode || '',
+            productName: data.items?.[0]?.name || data.productName || 'TriActive Serum',
+            items: data.items || [{ name: 'TriActive Serum', quantity: data.totalQuantity || 1, price: data.finalTotal || 598 }],
+            quantity: data.totalQuantity || data.quantity || data.items?.length || 1,
+            subtotal: data.subtotal || (Number(data.finalTotal) ? data.finalTotal - 39 : 559),
+            deliveryFee: data.deliveryFee ?? 39,
+            finalTotal: data.finalTotal || 598,
+            paymentMethod: data.paymentMethod || 'UPI / Online Payment',
+            status: data.status || 'Confirmed',
+            date: data.createdAt?.toDate ? data.createdAt.toDate().toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' }) : (data.date || 'Recent')
+          });
+        });
+
+        // Merge Firestore orders with any local orders
+        const localCurrent = getLocalOrders();
+        const merged = [...liveOrders];
+        const existingOrderNumbers = new Set(liveOrders.map(o => o.orderNumber));
+        localCurrent.forEach(loc => {
+          if (!existingOrderNumbers.has(loc.orderNumber)) {
+            merged.push(loc);
+          }
+        });
+        setOrders(merged);
+      }, (err) => {
+        console.warn("Firestore subscription fallback to local storage:", err);
+      });
+    } catch (err) {
+      console.warn("Firestore listener initialization failed:", err);
+    }
+
+    // Instant event listeners for same-tab and cross-tab order placement
+    const handleOrderEvent = () => {
+      const updated = getLocalOrders();
+      setOrders(prev => {
+        const existingIds = new Set(prev.map(p => p.orderNumber));
+        const newOnes = updated.filter(u => !existingIds.has(u.orderNumber));
+        return [...newOnes, ...prev];
+      });
+    };
+    window.addEventListener('glowfinder_order_placed', handleOrderEvent);
+    window.addEventListener('storage', handleOrderEvent);
+
+    return () => {
+      unsubscribe();
+      window.removeEventListener('glowfinder_order_placed', handleOrderEvent);
+      window.removeEventListener('storage', handleOrderEvent);
+    };
   }, []);
 
-  // Update order status function
+  // Update order status function with complete sync across State, LocalStorage & Firestore
   const handleUpdateOrderStatus = async (orderId, newStatus) => {
+    const targetNum = selectedOrder?.orderNumber || orderId;
+
+    // 1. Update component memory state
     setOrders(prev =>
-      prev.map(o => o.id === orderId ? { ...o, status: newStatus } : o)
+      prev.map(o => (o.id === orderId || o.orderNumber === orderId || (targetNum && o.orderNumber === targetNum)) ? { ...o, status: newStatus } : o)
     );
-    if (selectedOrder && selectedOrder.id === orderId) {
+    if (selectedOrder) {
       setSelectedOrder(prev => ({ ...prev, status: newStatus }));
     }
-    // Attempt Firestore update if it's a Firestore doc
+
+    // 2. Update localStorage and broadcast update event to User Account Modal & everywhere
     try {
-      const orderRef = doc(db, 'orders', orderId);
-      await updateDoc(orderRef, { status: newStatus });
+      const local = JSON.parse(localStorage.getItem('glowfinder_orders') || '[]');
+      const updatedLocal = local.map(o => {
+        const matchesId = o.id === orderId;
+        const matchesNum = o.orderNumber === orderId || o.orderNumber === targetNum;
+        const matchesNumSanitized = (o.orderNumber && targetNum) && (o.orderNumber.replace(/[^a-zA-Z0-9]/g, '') === targetNum.replace(/[^a-zA-Z0-9]/g, ''));
+        if (matchesId || matchesNum || matchesNumSanitized) {
+          return { ...o, status: newStatus };
+        }
+        return o;
+      });
+      localStorage.setItem('glowfinder_orders', JSON.stringify(updatedLocal));
+      
+      // Dispatch real-time custom event for immediate UI update
+      window.dispatchEvent(new CustomEvent('glowfinder_order_updated', {
+        detail: { orderId, orderNumber: targetNum, status: newStatus }
+      }));
+      window.dispatchEvent(new Event('storage'));
+    } catch (e) {
+      console.warn("LocalStorage sync error:", e);
+    }
+
+    // 3. Update Firestore
+    try {
+      if (orderId && orderId.length > 10 && !orderId.startsWith('#') && !orderId.startsWith('GF')) {
+        const orderRef = doc(db, 'orders', orderId);
+        await updateDoc(orderRef, { status: newStatus });
+      }
+      
+      // Also query by orderNumber
+      if (targetNum) {
+        const q1 = query(collection(db, 'orders'), where('orderNumber', '==', targetNum));
+        const qSnap1 = await getDocs(q1);
+        qSnap1.forEach(async (dSnap) => {
+          await updateDoc(doc(db, 'orders', dSnap.id), { status: newStatus });
+        });
+
+        // Also query sanitized order number (e.g. without #)
+        const cleanNum = targetNum.startsWith('#') ? targetNum.slice(1) : `#${targetNum}`;
+        const q2 = query(collection(db, 'orders'), where('orderNumber', '==', cleanNum));
+        const qSnap2 = await getDocs(q2);
+        qSnap2.forEach(async (dSnap) => {
+          await updateDoc(doc(db, 'orders', dSnap.id), { status: newStatus });
+        });
+      }
     } catch (err) {
-      // Local state is already updated
+      console.warn("Firestore sync note:", err);
     }
   };
 
@@ -180,12 +203,12 @@ export default function AdminDashboard({ onLogout, onNavigateHome, bannerText, o
     return matchesSearch && matchesStatus;
   });
 
-  // Calculate Aggregated Metrics
+  // Calculate Aggregated Metrics (Strictly from real orders)
   const totalOrdersCount = orders.length;
-  const pendingOrdersCount = orders.filter(o => o.status.toLowerCase() === 'pending').length;
-  const deliveredOrdersCount = orders.filter(o => o.status.toLowerCase() === 'delivered').length;
-  const totalRevenue = orders.reduce((acc, o) => acc + (Number(o.finalTotal) || 0), 0) + 62500;
-  const totalCustomers = new Set(orders.map(o => o.phone)).size + 93;
+  const pendingOrdersCount = orders.filter(o => o.status?.toLowerCase() === 'pending').length;
+  const deliveredOrdersCount = orders.filter(o => o.status?.toLowerCase() === 'delivered').length;
+  const totalRevenue = orders.reduce((acc, o) => acc + (Number(o.finalTotal) || 0), 0);
+  const totalCustomers = new Set(orders.map(o => o.phone).filter(p => p && p !== 'N/A')).size;
 
   const statusColors = {
     Pending: 'bg-amber-100 text-amber-800 border-amber-200',
@@ -518,53 +541,61 @@ export default function AdminDashboard({ onLogout, onNavigateHome, bannerText, o
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-100">
-                        {filteredOrders.slice(0, 5).map((order) => (
-                          <tr key={order.id} className="hover:bg-slate-50/70 transition-colors">
-                            <td className="py-3 pr-2 font-bold text-blue-600">
-                              {order.orderNumber}
-                            </td>
-                            <td className="py-3 px-2">
-                              <span className="font-bold text-slate-800 block">{order.customerName}</span>
-                              <span className="text-[10px] text-slate-400">{order.phone}</span>
-                            </td>
-                            <td className="py-3 px-2">
-                              <div className="flex items-center gap-2">
-                                <img
-                                  src="/assets/product-hd-clean.jpg"
-                                  alt="Product"
-                                  className="w-7 h-7 object-contain bg-slate-50 border rounded-md"
-                                />
-                                <div>
-                                  <span className="font-semibold text-slate-700 block">{order.productName}</span>
-                                  <span className="text-[10px] text-slate-400">x {order.quantity}</span>
-                                </div>
-                              </div>
-                            </td>
-                            <td className="py-3 px-2 font-extrabold text-slate-900">
-                              ₹{order.finalTotal}
-                            </td>
-                            <td className="py-3 px-2">
-                              <span className="text-slate-600 font-medium">{order.paymentMethod}</span>
-                            </td>
-                            <td className="py-3 px-2">
-                              <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${statusColors[order.status] || 'bg-slate-100 text-slate-700'}`}>
-                                {order.status}
-                              </span>
-                            </td>
-                            <td className="py-3 px-2 text-[11px] text-slate-500 whitespace-nowrap">
-                              {order.date}
-                            </td>
-                            <td className="py-3 pl-2 text-right">
-                              <button
-                                onClick={() => setSelectedOrder(order)}
-                                className="p-1.5 text-slate-400 hover:text-slate-700 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer"
-                                title="View & Edit Order"
-                              >
-                                <Eye className="w-4 h-4" />
-                              </button>
+                        {filteredOrders.length === 0 ? (
+                          <tr>
+                            <td colSpan="8" className="py-8 text-center text-slate-400 font-medium">
+                              No orders found. Live customer checkout orders will appear here automatically.
                             </td>
                           </tr>
-                        ))}
+                        ) : (
+                          filteredOrders.slice(0, 5).map((order) => (
+                            <tr key={order.id} className="hover:bg-slate-50/70 transition-colors">
+                              <td className="py-3 pr-2 font-bold text-blue-600">
+                                {order.orderNumber}
+                              </td>
+                              <td className="py-3 px-2">
+                                <span className="font-bold text-slate-800 block">{order.customerName}</span>
+                                <span className="text-[10px] text-slate-400">{order.phone}</span>
+                              </td>
+                              <td className="py-3 px-2">
+                                <div className="flex items-center gap-2">
+                                  <img
+                                    src="/assets/product-hd-clean.jpg"
+                                    alt="Product"
+                                    className="w-7 h-7 object-contain bg-slate-50 border rounded-md"
+                                  />
+                                  <div>
+                                    <span className="font-semibold text-slate-700 block">{order.productName}</span>
+                                    <span className="text-[10px] text-slate-400">x {order.quantity}</span>
+                                  </div>
+                                </div>
+                              </td>
+                              <td className="py-3 px-2 font-extrabold text-slate-900">
+                                ₹{order.finalTotal}
+                              </td>
+                              <td className="py-3 px-2">
+                                <span className="text-slate-600 font-medium">{order.paymentMethod}</span>
+                              </td>
+                              <td className="py-3 px-2">
+                                <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${statusColors[order.status] || 'bg-slate-100 text-slate-700'}`}>
+                                  {order.status}
+                                </span>
+                              </td>
+                              <td className="py-3 px-2 text-[11px] text-slate-500 whitespace-nowrap">
+                                {order.date}
+                              </td>
+                              <td className="py-3 pl-2 text-right">
+                                <button
+                                  onClick={() => setSelectedOrder(order)}
+                                  className="p-1.5 text-slate-400 hover:text-slate-700 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer"
+                                  title="View & Edit Order"
+                                >
+                                  <Eye className="w-4 h-4" />
+                                </button>
+                              </td>
+                            </tr>
+                          ))
+                        )}
                       </tbody>
                     </table>
                   </div>
@@ -594,12 +625,12 @@ export default function AdminDashboard({ onLogout, onNavigateHome, bannerText, o
                     <div>
                       <span className="text-[11px] text-slate-400 block">Total Sales</span>
                       <div className="flex items-baseline gap-2">
-                        <span className="text-2xl font-extrabold text-slate-900">₹85,000</span>
-                        <span className="text-[11px] text-emerald-600 font-bold">↑ 16% from last month</span>
+                        <span className="text-2xl font-extrabold text-slate-900">₹{totalRevenue.toLocaleString('en-IN')}</span>
+                        <span className="text-[11px] text-slate-500 font-normal">from live orders</span>
                       </div>
                     </div>
 
-                    {/* SVG Line Chart (Matching Mockup) */}
+                    {/* SVG Line Chart */}
                     <div className="pt-3">
                       <svg className="w-full h-28" viewBox="0 0 300 100" fill="none">
                         <path
@@ -612,11 +643,11 @@ export default function AdminDashboard({ onLogout, onNavigateHome, bannerText, o
                         <circle cx="300" cy="10" r="4" fill="#2563EB" />
                       </svg>
                       <div className="flex justify-between text-[10px] text-slate-400 pt-1">
-                        <span>May 1</span>
-                        <span>May 8</span>
-                        <span>May 15</span>
-                        <span>May 22</span>
-                        <span>May 31</span>
+                        <span>Day 1</span>
+                        <span>Day 8</span>
+                        <span>Day 15</span>
+                        <span>Day 22</span>
+                        <span>Today</span>
                       </div>
                     </div>
                   </div>
@@ -638,11 +669,11 @@ export default function AdminDashboard({ onLogout, onNavigateHome, bannerText, o
                         <div className="flex justify-between items-center mt-1.5 text-xs">
                           <div>
                             <span className="text-[10px] text-slate-400 block">Sold</span>
-                            <span className="font-extrabold text-slate-800">128</span>
+                            <span className="font-extrabold text-slate-800">{orders.reduce((sum, o) => sum + (Number(o.quantity) || 0), 0)}</span>
                           </div>
                           <div className="text-right">
                             <span className="text-[10px] text-slate-400 block">Revenue</span>
-                            <span className="font-extrabold text-emerald-600">₹71,552</span>
+                            <span className="font-extrabold text-emerald-600">₹{totalRevenue.toLocaleString('en-IN')}</span>
                           </div>
                         </div>
                       </div>
@@ -655,7 +686,6 @@ export default function AdminDashboard({ onLogout, onNavigateHome, bannerText, o
                       View All Products
                     </button>
                   </div>
-
                 </div>
 
               </div>
@@ -795,55 +825,63 @@ export default function AdminDashboard({ onLogout, onNavigateHome, bannerText, o
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
-                      {filteredOrders.map(order => (
-                        <tr key={order.id} className="hover:bg-slate-50/70 transition-colors">
-                          <td className="py-4 px-4 font-extrabold text-blue-600">
-                            {order.orderNumber}
-                            <span className="text-[10px] text-slate-400 block font-normal">{order.date}</span>
-                          </td>
-                          <td className="py-4 px-4">
-                            <span className="font-bold text-slate-900 block">{order.customerName}</span>
-                            <span className="text-[11px] text-slate-500 flex items-center gap-1 mt-0.5">
-                              <Phone className="w-3 h-3 text-slate-400" />
-                              {order.phone}
-                            </span>
-                          </td>
-                          <td className="py-4 px-4">
-                            <span className="font-semibold text-slate-800 block">{order.productName}</span>
-                            <span className="text-[11px] text-slate-500 font-medium">Quantity: {order.quantity}</span>
-                          </td>
-                          <td className="py-4 px-4 max-w-xs">
-                            <span className="text-slate-600 line-clamp-2 text-[11px]">{order.address}</span>
-                          </td>
-                          <td className="py-4 px-4 font-extrabold text-slate-900 text-sm">
-                            ₹{order.finalTotal}
-                          </td>
-                          <td className="py-4 px-4">
-                            <span className="text-xs font-semibold text-slate-700">{order.paymentMethod}</span>
-                          </td>
-                          <td className="py-4 px-4">
-                            <select
-                              value={order.status}
-                              onChange={(e) => handleUpdateOrderStatus(order.id, e.target.value)}
-                              className={`px-2.5 py-1 rounded-lg text-xs font-bold border cursor-pointer ${statusColors[order.status] || 'bg-slate-100'}`}
-                            >
-                              <option value="Pending">Pending</option>
-                              <option value="Confirmed">Confirmed</option>
-                              <option value="Packed">Packed</option>
-                              <option value="Shipped">Shipped</option>
-                              <option value="Delivered">Delivered</option>
-                            </select>
-                          </td>
-                          <td className="py-4 px-4 text-right">
-                            <button
-                              onClick={() => setSelectedOrder(order)}
-                              className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-bold transition-colors cursor-pointer"
-                            >
-                              Details
-                            </button>
+                      {filteredOrders.length === 0 ? (
+                        <tr>
+                          <td colSpan="8" className="py-12 text-center text-slate-400 font-medium">
+                            No orders placed yet. As customers place orders on your website, they will appear here live.
                           </td>
                         </tr>
-                      ))}
+                      ) : (
+                        filteredOrders.map(order => (
+                          <tr key={order.id} className="hover:bg-slate-50/70 transition-colors">
+                            <td className="py-4 px-4 font-extrabold text-blue-600">
+                              {order.orderNumber}
+                              <span className="text-[10px] text-slate-400 block font-normal">{order.date}</span>
+                            </td>
+                            <td className="py-4 px-4">
+                              <span className="font-bold text-slate-900 block">{order.customerName}</span>
+                              <span className="text-[11px] text-slate-500 flex items-center gap-1 mt-0.5">
+                                <Phone className="w-3 h-3 text-slate-400" />
+                                {order.phone}
+                              </span>
+                            </td>
+                            <td className="py-4 px-4">
+                              <span className="font-semibold text-slate-800 block">{order.productName}</span>
+                              <span className="text-[11px] text-slate-500 font-medium">Quantity: {order.quantity}</span>
+                            </td>
+                            <td className="py-4 px-4 max-w-xs">
+                              <span className="text-slate-600 line-clamp-2 text-[11px]">{order.address}</span>
+                            </td>
+                            <td className="py-4 px-4 font-extrabold text-slate-900 text-sm">
+                              ₹{order.finalTotal}
+                            </td>
+                            <td className="py-4 px-4">
+                              <span className="text-xs font-semibold text-slate-700">{order.paymentMethod}</span>
+                            </td>
+                            <td className="py-4 px-4">
+                              <select
+                                value={order.status}
+                                onChange={(e) => handleUpdateOrderStatus(order.id, e.target.value)}
+                                className={`px-2.5 py-1 rounded-lg text-xs font-bold border cursor-pointer ${statusColors[order.status] || 'bg-slate-100'}`}
+                              >
+                                <option value="Pending">Pending</option>
+                                <option value="Confirmed">Confirmed</option>
+                                <option value="Packed">Packed</option>
+                                <option value="Shipped">Shipped</option>
+                                <option value="Delivered">Delivered</option>
+                              </select>
+                            </td>
+                            <td className="py-4 px-4 text-right">
+                              <button
+                                onClick={() => setSelectedOrder(order)}
+                                className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-bold transition-colors cursor-pointer"
+                              >
+                                Details
+                              </button>
+                            </td>
+                          </tr>
+                        ))
+                      )}
                     </tbody>
                   </table>
                 </div>
@@ -899,36 +937,82 @@ export default function AdminDashboard({ onLogout, onNavigateHome, bannerText, o
           {/* VIEW: CUSTOMERS */}
           {activeMenu === 'customers' && (
             <div className="space-y-6">
-              <div>
-                <h1 className="text-2xl font-extrabold text-slate-900">Customer Management</h1>
-                <p className="text-xs text-slate-500">View customer list, contact details, and lifetime purchase history.</p>
+              <div className="flex justify-between items-center">
+                <div>
+                  <h1 className="text-2xl font-extrabold text-slate-900">Customer Management</h1>
+                  <p className="text-xs text-slate-500">Full list of verified customers, phone numbers, addresses, and purchase history.</p>
+                </div>
+                <div className="text-right">
+                  <span className="text-xs font-bold text-slate-500">Total Unique Buyers:</span>
+                  <span className="text-lg font-extrabold text-blue-600 ml-1.5">{totalCustomers}</span>
+                </div>
               </div>
 
               <div className="bg-white rounded-2xl border border-slate-100 shadow-xs overflow-hidden">
                 <table className="w-full text-left text-xs">
                   <thead className="bg-slate-50 text-slate-500 font-bold border-b border-slate-100">
                     <tr>
-                      <th className="py-3 px-4">Customer Name</th>
-                      <th className="py-3 px-4">Phone Number</th>
-                      <th className="py-3 px-4">City</th>
-                      <th className="py-3 px-4">Total Orders</th>
-                      <th className="py-3 px-4">Status</th>
+                      <th className="py-3.5 px-4">Customer Name & Email</th>
+                      <th className="py-3.5 px-4">Contact Phone</th>
+                      <th className="py-3.5 px-4">Delivery Location</th>
+                      <th className="py-3.5 px-4">Total Purchases</th>
+                      <th className="py-3.5 px-4">Status</th>
+                      <th className="py-3.5 px-4 text-right">Direct Action</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
-                    {orders.slice(0, 8).map((c, i) => (
-                      <tr key={i} className="hover:bg-slate-50">
-                        <td className="py-3.5 px-4 font-bold text-slate-900">{c.customerName}</td>
-                        <td className="py-3.5 px-4 text-slate-600">{c.phone}</td>
-                        <td className="py-3.5 px-4 text-slate-600">{c.address.split(',').pop() || 'India'}</td>
-                        <td className="py-3.5 px-4 font-extrabold text-blue-600">{c.quantity} orders</td>
-                        <td className="py-3.5 px-4">
-                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700">
-                            Active Buyer
-                          </span>
+                    {orders.length === 0 ? (
+                      <tr>
+                        <td colSpan="6" className="py-12 text-center text-slate-400 font-medium">
+                          No customer records yet. Real customer details will appear here live when orders are placed.
                         </td>
                       </tr>
-                    ))}
+                    ) : (
+                      orders.map((c, i) => (
+                        <tr key={i} className="hover:bg-slate-50/70 transition-colors">
+                          <td className="py-3.5 px-4">
+                            <span className="font-bold text-slate-900 block text-sm">{c.customerName}</span>
+                            <span className="text-[11px] text-slate-400">{c.email || 'guest@glowfinder.com'}</span>
+                          </td>
+                          <td className="py-3.5 px-4">
+                            <div className="flex items-center gap-1.5">
+                              <span className="font-semibold text-slate-800">{c.phone}</span>
+                              {c.phone && c.phone !== 'N/A' && (
+                                <a 
+                                  href={`https://wa.me/91${c.phone.replace(/[^0-9]/g, '')}`} 
+                                  target="_blank" 
+                                  rel="noreferrer"
+                                  className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800 hover:bg-emerald-200 transition-colors"
+                                  title="WhatsApp Customer"
+                                >
+                                  WhatsApp
+                                </a>
+                              )}
+                            </div>
+                          </td>
+                          <td className="py-3.5 px-4 max-w-xs">
+                            <span className="text-slate-700 line-clamp-1">{c.address}</span>
+                          </td>
+                          <td className="py-3.5 px-4">
+                            <span className="font-extrabold text-slate-900 block">₹{c.finalTotal}</span>
+                            <span className="text-[10px] text-slate-400">{c.quantity} items ordered</span>
+                          </td>
+                          <td className="py-3.5 px-4">
+                            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                              Verified Buyer
+                            </span>
+                          </td>
+                          <td className="py-3.5 px-4 text-right">
+                            <button
+                              onClick={() => setSelectedOrder(c)}
+                              className="px-3 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-bold transition-colors cursor-pointer"
+                            >
+                              View Order
+                            </button>
+                          </td>
+                        </tr>
+                      ))
+                    )}
                   </tbody>
                 </table>
               </div>
@@ -1062,19 +1146,19 @@ export default function AdminDashboard({ onLogout, onNavigateHome, bannerText, o
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
                 <div className="p-5 bg-white rounded-2xl border shadow-xs">
-                  <span className="text-xs text-slate-400 block">Monthly Revenue</span>
-                  <span className="text-2xl font-extrabold text-slate-900">₹85,000</span>
-                  <span className="text-xs text-emerald-600 font-bold block mt-1">↑ 16% growth</span>
+                  <span className="text-xs text-slate-400 block">Total Revenue</span>
+                  <span className="text-2xl font-extrabold text-slate-900">₹{totalRevenue.toLocaleString('en-IN')}</span>
+                  <span className="text-xs text-emerald-600 font-bold block mt-1">Live from customer orders</span>
                 </div>
                 <div className="p-5 bg-white rounded-2xl border shadow-xs">
-                  <span className="text-xs text-slate-400 block">Avg. Order Value (AOV)</span>
-                  <span className="text-2xl font-extrabold text-slate-900">₹598</span>
-                  <span className="text-xs text-slate-500 block mt-1">Single & Multi-unit bundles</span>
+                  <span className="text-xs text-slate-400 block">Total Orders Count</span>
+                  <span className="text-2xl font-extrabold text-slate-900">{totalOrdersCount}</span>
+                  <span className="text-xs text-slate-500 block mt-1">Placed via Express Checkout</span>
                 </div>
                 <div className="p-5 bg-white rounded-2xl border shadow-xs">
-                  <span className="text-xs text-slate-400 block">Checkout Conversion Rate</span>
-                  <span className="text-2xl font-extrabold text-slate-900">4.8%</span>
-                  <span className="text-xs text-emerald-600 font-bold block mt-1">↑ 0.6% vs benchmark</span>
+                  <span className="text-xs text-slate-400 block">Total Customers</span>
+                  <span className="text-2xl font-extrabold text-slate-900">{totalCustomers}</span>
+                  <span className="text-xs text-emerald-600 font-bold block mt-1">Verified unique phone numbers</span>
                 </div>
               </div>
             </div>
@@ -1115,56 +1199,137 @@ export default function AdminDashboard({ onLogout, onNavigateHome, bannerText, o
       </div>
 
       {/* =========================================================================
-          ORDER DETAILS & STATUS CHANGER MODAL
+          ORDER DETAILS & STATUS CHANGER MODAL WITH FULL CUSTOMER INFORMATION
          ========================================================================= */}
       {selectedOrder && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
-          <div className="bg-white rounded-3xl p-6 max-w-lg w-full shadow-2xl border border-slate-100 space-y-4 animate-in zoom-in-95">
-            <div className="flex justify-between items-center pb-3 border-b border-slate-100">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs overflow-y-auto">
+          <div className="bg-white rounded-3xl p-6 sm:p-7 max-w-xl w-full shadow-2xl border border-slate-100 space-y-5 animate-in zoom-in-95 my-8">
+            
+            {/* Header */}
+            <div className="flex justify-between items-center pb-3.5 border-b border-slate-100">
               <div>
-                <h3 className="text-base font-extrabold text-slate-900">Order Details ({selectedOrder.orderNumber})</h3>
-                <span className="text-[11px] text-slate-400">{selectedOrder.date}</span>
+                <div className="flex items-center gap-2">
+                  <h3 className="text-base sm:text-lg font-extrabold text-slate-900">
+                    Order Details ({selectedOrder.orderNumber})
+                  </h3>
+                  <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${statusColors[selectedOrder.status] || 'bg-slate-100'}`}>
+                    {selectedOrder.status}
+                  </span>
+                </div>
+                <span className="text-[11px] text-slate-400 block mt-0.5">Placed on: {selectedOrder.date}</span>
               </div>
               <button
                 onClick={() => setSelectedOrder(null)}
-                className="p-1.5 text-slate-400 hover:text-slate-600 rounded-full"
+                className="p-1.5 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-100 transition-colors"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <div className="space-y-3 text-xs">
-              <div className="p-3 bg-slate-50 rounded-xl space-y-1.5">
-                <span className="text-slate-400 font-bold uppercase text-[10px] block">Customer Information</span>
-                <p className="font-bold text-slate-900 text-sm">{selectedOrder.customerName}</p>
-                <p className="text-slate-600">Phone: {selectedOrder.phone}</p>
-                <p className="text-slate-600 leading-relaxed">Address: {selectedOrder.address}</p>
+            <div className="space-y-4 text-xs max-h-[70vh] overflow-y-auto pr-1">
+              
+              {/* 1. Full Customer Information Card */}
+              <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100 space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-slate-400 font-bold uppercase text-[10px] tracking-wider flex items-center gap-1.5">
+                    <Users className="w-3.5 h-3.5 text-blue-500" />
+                    Customer Information
+                  </span>
+                  {selectedOrder.phone && selectedOrder.phone !== 'N/A' && (
+                    <a
+                      href={`https://wa.me/91${selectedOrder.phone.replace(/[^0-9]/g, '')}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-[10px] font-bold flex items-center gap-1 transition-colors"
+                    >
+                      💬 WhatsApp Customer
+                    </a>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                  <div>
+                    <span className="text-[10px] text-slate-400 block">Full Name:</span>
+                    <p className="font-extrabold text-slate-900 text-sm">{selectedOrder.customerName}</p>
+                  </div>
+                  <div>
+                    <span className="text-[10px] text-slate-400 block">Phone Number:</span>
+                    <a href={`tel:${selectedOrder.phone}`} className="font-bold text-blue-600 hover:underline">
+                      {selectedOrder.phone}
+                    </a>
+                  </div>
+                  <div className="sm:col-span-2">
+                    <span className="text-[10px] text-slate-400 block">Email Address:</span>
+                    <p className="font-medium text-slate-700">{selectedOrder.email || 'guest@glowfinder.com'}</p>
+                  </div>
+                  <div className="sm:col-span-2 bg-white p-3 rounded-xl border border-slate-200/80">
+                    <div className="flex justify-between items-center mb-1">
+                      <span className="text-[10px] font-bold text-slate-500 uppercase flex items-center gap-1">
+                        <MapPin className="w-3 h-3 text-glow-orange" />
+                        Full Delivery Address:
+                      </span>
+                      <button
+                        onClick={() => {
+                          navigator.clipboard.writeText(selectedOrder.address);
+                          alert('Address copied to clipboard!');
+                        }}
+                        className="text-[10px] text-blue-600 hover:underline font-bold"
+                      >
+                        Copy Address
+                      </button>
+                    </div>
+                    <p className="text-slate-800 font-medium leading-relaxed">{selectedOrder.address}</p>
+                  </div>
+                </div>
               </div>
 
-              <div className="p-3 bg-slate-50 rounded-xl space-y-1.5">
-                <span className="text-slate-400 font-bold uppercase text-[10px] block">Order Summary</span>
-                <div className="flex justify-between">
-                  <span>Product:</span>
-                  <span className="font-bold text-slate-900">{selectedOrder.productName} (x{selectedOrder.quantity})</span>
+              {/* 2. Order Summary & Product Details */}
+              <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100 space-y-2.5">
+                <span className="text-slate-400 font-bold uppercase text-[10px] tracking-wider flex items-center gap-1.5">
+                  <ShoppingBag className="w-3.5 h-3.5 text-glow-orange" />
+                  Order Summary
+                </span>
+
+                <div className="flex items-center justify-between p-2.5 bg-white rounded-xl border border-slate-100">
+                  <div className="flex items-center gap-2.5">
+                    <img
+                      src="/assets/product-hd-clean.jpg"
+                      alt="Product"
+                      className="w-10 h-10 object-contain bg-slate-50 rounded-lg p-0.5 border"
+                    />
+                    <div>
+                      <p className="font-bold text-slate-900">{selectedOrder.productName}</p>
+                      <span className="text-[11px] text-slate-500">Qty: {selectedOrder.quantity} units</span>
+                    </div>
+                  </div>
+                  <span className="font-extrabold text-slate-900">₹{selectedOrder.finalTotal}</span>
                 </div>
-                <div className="flex justify-between">
-                  <span>Payment Method:</span>
-                  <span className="font-bold text-slate-900">{selectedOrder.paymentMethod}</span>
-                </div>
-                <div className="flex justify-between font-extrabold text-sm pt-1 border-t">
-                  <span>Total Amount:</span>
-                  <span className="text-glow-orange">₹{selectedOrder.finalTotal}</span>
+
+                <div className="space-y-1 pt-1 text-slate-600 text-xs">
+                  <div className="flex justify-between">
+                    <span>Payment Method:</span>
+                    <span className="font-bold text-slate-800">{selectedOrder.paymentMethod}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Delivery Charge:</span>
+                    <span className="font-bold text-slate-800">₹{selectedOrder.deliveryFee || 39}</span>
+                  </div>
+                  <div className="flex justify-between text-sm font-extrabold text-slate-900 pt-1.5 border-t border-slate-200">
+                    <span>Total Amount:</span>
+                    <span className="text-glow-orange">₹{selectedOrder.finalTotal}</span>
+                  </div>
                 </div>
               </div>
 
-              <div className="p-3 bg-amber-50/70 border border-amber-200/80 rounded-xl space-y-2">
+              {/* 3. Update Order Status */}
+              <div className="p-4 bg-amber-50/70 border border-amber-200/80 rounded-2xl space-y-2.5">
                 <span className="text-amber-900 font-bold text-xs block">Update Order Status:</span>
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-5 gap-1.5">
                   {['Pending', 'Confirmed', 'Packed', 'Shipped', 'Delivered'].map(st => (
                     <button
                       key={st}
                       onClick={() => handleUpdateOrderStatus(selectedOrder.id, st)}
-                      className={`py-1.5 rounded-lg text-xs font-bold border transition-all cursor-pointer ${
+                      className={`py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
                         selectedOrder.status === st 
                           ? 'bg-slate-900 text-white border-slate-900 shadow-xs' 
                           : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'
@@ -1175,11 +1340,12 @@ export default function AdminDashboard({ onLogout, onNavigateHome, bannerText, o
                   ))}
                 </div>
               </div>
+
             </div>
 
             <button
               onClick={() => setSelectedOrder(null)}
-              className="w-full py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl"
+              className="w-full py-3 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl transition-colors cursor-pointer"
             >
               Done & Close
             </button>

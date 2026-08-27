@@ -1,41 +1,146 @@
 import React, { useState, useEffect } from 'react';
-import { X, User, Package, LogOut, Calendar, MapPin, CreditCard, ChevronRight, Sparkles } from 'lucide-react';
+import { X, User, Package, LogOut, Calendar, MapPin, CreditCard, ChevronRight, Sparkles, Phone, Clock, CheckCircle2, Truck } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { collection, query, where, getDocs, orderBy } from 'firebase/firestore';
+import { collection, query, where, getDocs, onSnapshot, orderBy } from 'firebase/firestore';
 import { db } from '../firebase/config';
 
 export default function UserAccountModal({ isOpen, onClose }) {
   const { currentUser, logout } = useAuth();
   const [orders, setOrders] = useState([]);
-  const [loadingOrders, setLoadingOrders] = useState(true);
+  const [loadingOrders, setLoadingOrders] = useState(false);
   const [activeTab, setActiveTab] = useState('orders'); // 'orders' | 'profile'
 
   useEffect(() => {
-    async function fetchOrders() {
-      if (!currentUser) return;
-      setLoadingOrders(true);
+    if (!isOpen || !currentUser) return;
+
+    function getMatchingLocalOrders() {
       try {
-        const q = query(
-          collection(db, 'orders'),
-          where('userEmail', '==', currentUser.email)
+        const local = JSON.parse(localStorage.getItem('glowfinder_orders') || '[]');
+        const userEmailLower = (currentUser.email || '').toLowerCase();
+        // Return orders matching user email, or all orders placed on this device if guest/user
+        return local.filter(o => 
+          !o.userEmail || 
+          o.userEmail.toLowerCase() === userEmailLower || 
+          o.userId === currentUser.uid ||
+          o.userEmail === 'guest@glowfinder.com' ||
+          local.length === 1 // If there's an order placed on this device
         );
-        const querySnapshot = await getDocs(q);
-        const fetchedOrders = [];
-        querySnapshot.forEach((doc) => {
-          fetchedOrders.push({ id: doc.id, ...doc.data() });
-        });
-        // Sort by createdAt descending
-        fetchedOrders.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
-        setOrders(fetchedOrders);
-      } catch (err) {
-        console.error('Error fetching orders:', err);
+      } catch (e) {
+        return [];
       }
+    }
+
+    // 1. Instant local load (0ms delay)
+    const localMatches = getMatchingLocalOrders();
+    if (localMatches.length > 0) {
+      setOrders(localMatches);
+      setLoadingOrders(false);
+    } else {
+      setLoadingOrders(true);
+    }
+
+    // 2. Fetch from Firestore with real-time listener
+    let isMounted = true;
+    let unsubscribe = () => {};
+
+    try {
+      const q = query(
+        collection(db, 'orders'),
+        orderBy('createdAt', 'desc')
+      );
+      
+      unsubscribe = onSnapshot(q, (querySnapshot) => {
+        if (!isMounted) return;
+        const fetchedOrders = [];
+        const userEmailLower = (currentUser.email || '').toLowerCase();
+
+        querySnapshot.forEach((docSnap) => {
+          const data = docSnap.data();
+          const orderEmail = (data.userEmail || data.email || '').toLowerCase();
+          
+          if (
+            orderEmail === userEmailLower ||
+            data.userId === currentUser.uid ||
+            orderEmail === 'guest@glowfinder.com' ||
+            (localMatches.some(l => l.orderNumber === data.orderNumber))
+          ) {
+            fetchedOrders.push({
+              id: docSnap.id,
+              orderNumber: data.orderNumber || `#${docSnap.id.slice(0, 6)}`,
+              customerName: data.customerName || data.name || 'Customer',
+              phone: data.phone || 'N/A',
+              address: data.address ? `${data.address}` : 'Standard Address',
+              productName: data.items?.[0]?.name || data.productName || 'TriActive Serum',
+              items: data.items || [{ name: 'TriActive Serum', quantity: data.totalQuantity || 1, price: data.finalTotal || 598 }],
+              quantity: data.totalQuantity || data.quantity || data.items?.length || 1,
+              subtotal: data.subtotal || 559,
+              deliveryFee: data.deliveryFee ?? 39,
+              finalTotal: data.finalTotal || 598,
+              paymentMethod: data.paymentMethod || 'UPI / Online Payment',
+              status: data.status || 'Confirmed',
+              date: data.createdAt?.toDate ? data.createdAt.toDate().toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' }) : (data.date || 'Recent')
+            });
+          }
+        });
+
+        // Merge with local orders, prioritizing latest Firestore status
+        const currentLocals = getMatchingLocalOrders();
+        const merged = [...fetchedOrders];
+        const existingNumbers = new Set(fetchedOrders.map(f => f.orderNumber));
+        currentLocals.forEach(loc => {
+          if (!existingNumbers.has(loc.orderNumber)) {
+            merged.push(loc);
+          }
+        });
+
+        setOrders(merged);
+        setLoadingOrders(false);
+      }, (err) => {
+        console.warn('Firestore orders fallback to local cache:', err);
+        if (isMounted) {
+          setOrders(getMatchingLocalOrders());
+          setLoadingOrders(false);
+        }
+      });
+    } catch (err) {
+      console.warn('Firestore query error:', err);
+      setOrders(getMatchingLocalOrders());
       setLoadingOrders(false);
     }
 
-    if (isOpen && currentUser) {
-      fetchOrders();
-    }
+    // 3. Real-time local & cross-tab status update listeners
+    const handleStatusUpdate = (e) => {
+      if (e?.detail?.status) {
+        const { orderId, orderNumber, status } = e.detail;
+        setOrders(prev => prev.map(o => {
+          const matchesId = o.id === orderId;
+          const matchesNum = o.orderNumber === orderNumber || o.orderNumber === orderId;
+          const matchesSanitized = (o.orderNumber && orderNumber) && (o.orderNumber.replace(/[^a-zA-Z0-9]/g, '') === orderNumber.replace(/[^a-zA-Z0-9]/g, ''));
+          if (matchesId || matchesNum || matchesSanitized) {
+            return { ...o, status };
+          }
+          return o;
+        }));
+      } else {
+        setOrders(getMatchingLocalOrders());
+      }
+    };
+
+    window.addEventListener('glowfinder_order_updated', handleStatusUpdate);
+    window.addEventListener('storage', handleStatusUpdate);
+
+    // Safety timeout: Never stay in loading state more than 600ms
+    const timer = setTimeout(() => {
+      if (isMounted) setLoadingOrders(false);
+    }, 600);
+
+    return () => {
+      isMounted = false;
+      unsubscribe();
+      clearTimeout(timer);
+      window.removeEventListener('glowfinder_order_updated', handleStatusUpdate);
+      window.removeEventListener('storage', handleStatusUpdate);
+    };
   }, [isOpen, currentUser]);
 
   if (!isOpen || !currentUser) return null;
@@ -51,6 +156,26 @@ export default function UserAccountModal({ isOpen, onClose }) {
 
   const displayName = currentUser.displayName || currentUser.email.split('@')[0];
   const initial = displayName.charAt(0).toUpperCase();
+
+  const getStatusBadgeStyle = (status = 'Confirmed') => {
+    const s = (status || '').toLowerCase();
+    if (s === 'delivered') {
+      return 'bg-emerald-100 text-emerald-800 border-emerald-300 font-extrabold';
+    }
+    if (s === 'shipped') {
+      return 'bg-[#0F1B2B] text-white border-[#0F1B2B] font-extrabold shadow-2xs';
+    }
+    if (s === 'packed') {
+      return 'bg-purple-100 text-purple-800 border-purple-300 font-extrabold';
+    }
+    if (s === 'confirmed') {
+      return 'bg-amber-100 text-amber-900 border-amber-300 font-extrabold';
+    }
+    if (s === 'pending') {
+      return 'bg-amber-50 text-amber-700 border-amber-200 font-extrabold';
+    }
+    return 'bg-slate-100 text-slate-800 border-slate-200 font-extrabold';
+  };
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto flex items-center justify-center p-4">
@@ -138,37 +263,39 @@ export default function UserAccountModal({ isOpen, onClose }) {
               ) : (
                 <div className="space-y-3">
                   {orders.map((order) => (
-                    <div key={order.id} className="p-4 rounded-2xl border border-slate-100 bg-slate-50/50 space-y-2.5">
+                    <div key={order.id || order.orderNumber} className="p-4 rounded-2xl border border-slate-100 bg-slate-50/70 space-y-2.5 shadow-xs">
                       <div className="flex justify-between items-center pb-2 border-b border-slate-200/60 text-xs">
                         <div>
-                          <span className="font-extrabold text-glow-navy block">Order #{order.orderNumber || order.id.slice(0, 8)}</span>
+                          <span className="font-extrabold text-blue-600 block text-sm">
+                            {order.orderNumber ? (order.orderNumber.startsWith('#') ? order.orderNumber : `#${order.orderNumber}`) : `#${order.id?.slice(0, 8)}`}
+                          </span>
                           <span className="text-[10px] text-slate-400">
-                            {order.createdAt?.toDate ? order.createdAt.toDate().toLocaleDateString() : 'Recent Order'}
+                            {order.date || (order.createdAt?.toDate ? order.createdAt.toDate().toLocaleDateString('en-IN') : 'Recent Order')}
                           </span>
                         </div>
-                        <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800">
-                          {order.status || 'Confirmed & Processing'}
+                        <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold border transition-all ${getStatusBadgeStyle(order.status)}`}>
+                          {order.status || 'Confirmed'}
                         </span>
                       </div>
 
-                      <div className="space-y-1 text-xs">
+                      <div className="space-y-1.5 text-xs">
                         <div className="flex justify-between text-slate-600">
                           <span>Items:</span>
-                          <span className="font-semibold text-glow-navy">{order.totalQuantity || 1}x TriActive Serum</span>
+                          <span className="font-bold text-slate-900">{order.quantity || order.totalQuantity || 1}x {order.productName || 'Glow Finder™ TriActive Brightening Serum'}</span>
                         </div>
                         <div className="flex justify-between text-slate-600">
                           <span>Delivery Address:</span>
-                          <span className="font-medium text-slate-700 truncate max-w-[220px]">
-                            {order.address || order.city || 'Standard Address'}
+                          <span className="font-medium text-slate-700 truncate max-w-[220px]" title={order.address}>
+                            {order.address || order.city || 'Standard Delivery Address'}
                           </span>
                         </div>
                         <div className="flex justify-between text-slate-600">
                           <span>Payment Mode:</span>
-                          <span className="font-medium text-glow-navy">{order.paymentMethod || 'UPI / Online'}</span>
+                          <span className="font-medium text-slate-800">{order.paymentMethod || 'UPI / Online Payment'}</span>
                         </div>
-                        <div className="flex justify-between font-extrabold text-glow-navy text-sm pt-1 border-t border-slate-200">
+                        <div className="flex justify-between font-extrabold text-slate-900 text-sm pt-1.5 border-t border-slate-200">
                           <span>Total Amount Paid:</span>
-                          <span className="text-glow-orange">₹{order.finalTotal || 598}</span>
+                          <span className="text-glow-orange font-extrabold">₹{order.finalTotal || 598}</span>
                         </div>
                       </div>
                     </div>

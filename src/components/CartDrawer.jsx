@@ -93,38 +93,63 @@ export default function CartDrawer({
       return;
     }
     setSubmittingOrder(true);
-    // Generate order ID
+
+    // Generate unique order ID
     const newOrderId = 'GF-' + Math.floor(100000 + Math.random() * 900000);
     setOrderId(newOrderId);
 
-    // Save order to Firestore backend
+    const fullDeliveryAddress = `${formData.address}${formData.city ? ', ' + formData.city : ''}${formData.pincode ? ' - ' + formData.pincode : ''}`;
+
+    const orderPayload = {
+      id: newOrderId,
+      orderNumber: newOrderId,
+      userId: currentUser ? currentUser.uid : null,
+      userEmail: formData.email || currentUser?.email || 'guest@glowfinder.com',
+      customerName: formData.name,
+      phone: formData.phone,
+      address: fullDeliveryAddress,
+      rawAddress: formData.address,
+      city: formData.city,
+      pincode: formData.pincode,
+      items: cartItems.map(item => ({
+        id: item.id,
+        name: item.name,
+        quantity: item.quantity,
+        price: item.price
+      })),
+      productName: cartItems[0]?.name || 'TriActive Serum',
+      quantity: totalQuantity,
+      subtotal,
+      deliveryFee,
+      finalTotal,
+      paymentMethod: 'UPI / Online Payment',
+      status: 'Confirmed',
+      date: new Date().toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })
+    };
+
+    // 1. Instant Local Storage Dispatch for Zero-Latency Admin updates
     try {
-      await addDoc(collection(db, 'orders'), {
-        orderNumber: newOrderId,
-        userId: currentUser ? currentUser.uid : null,
-        userEmail: formData.email || currentUser?.email || 'guest@glowfinder.com',
-        customerName: formData.name,
-        phone: formData.phone,
-        address: formData.address,
-        city: formData.city,
-        pincode: formData.pincode,
-        items: cartItems.map(item => ({
-          id: item.id,
-          name: item.name,
-          quantity: item.quantity,
-          price: item.price
-        })),
-        totalQuantity,
-        subtotal,
-        deliveryFee,
-        finalTotal,
-        paymentMethod: 'UPI / Online Payment',
-        status: 'Confirmed & Packing',
+      const existingLocal = JSON.parse(localStorage.getItem('glowfinder_orders') || '[]');
+      localStorage.setItem('glowfinder_orders', JSON.stringify([orderPayload, ...existingLocal]));
+      window.dispatchEvent(new Event('glowfinder_order_placed'));
+    } catch (err) {
+      console.warn("Local storage write error:", err);
+    }
+
+    // 2. Non-blocking Asynchronous Cloud Firestore Sync (Never blocks UI)
+    try {
+      addDoc(collection(db, 'orders'), {
+        ...orderPayload,
         createdAt: serverTimestamp()
+      }).catch(err => {
+        console.warn("Firestore background sync warning:", err);
       });
     } catch (err) {
-      console.warn("Could not save to Firestore (fallback to local order):", err);
+      console.warn("Firestore dispatch error:", err);
     }
+
+    // 3. Snappy 350ms tactile feedback delay before showing celebratory screen
+    await new Promise(resolve => setTimeout(resolve, 350));
     setSubmittingOrder(false);
     setStep('success');
   };
@@ -477,68 +502,141 @@ export default function CartDrawer({
                   </div>
                 </div>
 
-                {/* Place Order Submit */}
+                {/* Place Order Submit Button with Loading State */}
                 <button
                   type="submit"
-                  className="w-full py-3.5 bg-glow-orange hover:bg-glow-orange-hover text-white font-bold text-sm rounded-xl shadow-glow-soft hover:shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer mt-4"
+                  disabled={submittingOrder}
+                  className="w-full py-3.5 bg-glow-orange hover:bg-glow-orange-hover disabled:bg-glow-orange/80 text-white font-bold text-sm rounded-xl shadow-glow-soft hover:shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer mt-4"
                 >
-                  <CheckCircle2 className="w-4 h-4" />
-                  <span>CONFIRM & PLACE ORDER (₹{finalTotal})</span>
+                  {submittingOrder ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                      <span>CONFIRMING & SECURING ORDER...</span>
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle2 className="w-4 h-4" />
+                      <span>CONFIRM & PLACE ORDER (₹{finalTotal})</span>
+                    </>
+                  )}
                 </button>
               </form>
             </div>
           )}
 
           {/* =========================================================================
-              VIEW 3: ORDER SUCCESS CONFIRMATION
+              VIEW 3: CELEBRATORY ORDER SUCCESS CONFIRMATION WITH ANIMATIONS
              ========================================================================= */}
           {step === 'success' && (
-            <div className="flex-1 overflow-y-auto p-6 flex flex-col items-center justify-center text-center space-y-5">
-              <div className="w-16 h-16 rounded-full bg-green-100 text-green-600 flex items-center justify-center animate-in zoom-in-75 duration-300">
-                <CheckCircle2 className="w-10 h-10" />
+            <div className="flex-1 overflow-y-auto p-6 flex flex-col items-center justify-between text-center relative overflow-hidden">
+              
+              {/* Floating Confetti Particle Sparks */}
+              <div className="absolute inset-0 pointer-events-none overflow-hidden z-0">
+                <div className="absolute top-12 left-8 w-2.5 h-2.5 rounded-full bg-amber-400 animate-confetti opacity-80"></div>
+                <div className="absolute top-16 right-10 w-3 h-3 rounded-full bg-glow-orange animate-confetti delay-100 opacity-90"></div>
+                <div className="absolute top-24 left-16 w-2 h-2 rounded-full bg-emerald-400 animate-confetti delay-200 opacity-80"></div>
+                <div className="absolute top-10 right-24 w-2.5 h-2.5 rounded-full bg-sky-400 animate-confetti delay-350 opacity-80"></div>
+                <div className="absolute top-28 right-12 w-2 h-2 rounded-full bg-purple-400 animate-confetti delay-500 opacity-80"></div>
+                <div className="absolute top-20 left-28 w-3 h-3 rounded-full bg-amber-300 animate-confetti delay-700 opacity-90"></div>
               </div>
 
-              <div className="space-y-1.5">
-                <span className="text-xs font-bold text-green-700 bg-green-50 px-3 py-1 rounded-full uppercase tracking-wider">
-                  Order Successfully Placed!
-                </span>
-                <h3 className="text-xl font-extrabold text-glow-navy pt-1">
-                  Thank You, {formData.name || 'Valued Customer'}!
-                </h3>
-                <p className="text-xs text-slate-500 max-w-xs leading-relaxed">
-                  Your order has been recorded. We will pack and dispatch your Glow Finder serum with express delivery.
-                </p>
+              <div className="w-full space-y-4 relative z-10 flex flex-col items-center pt-1">
+                
+                {/* Celebratory Animated Checkmark with Pulsing Ripple Rings */}
+                <div className="relative flex items-center justify-center my-2">
+                  <div className="absolute w-20 h-20 rounded-full bg-emerald-500/20 animate-pulse-ring"></div>
+                  <div className="absolute w-16 h-16 rounded-full bg-emerald-500/30 animate-ping"></div>
+                  <div className="relative w-18 h-18 rounded-full bg-gradient-to-tr from-emerald-600 to-emerald-400 text-white flex items-center justify-center shadow-lg shadow-emerald-500/30 animate-checkmark-pop">
+                    <CheckCircle2 className="w-10 h-10 stroke-[2.5]" />
+                  </div>
+                </div>
+
+                {/* Celebration Tag */}
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 font-bold text-xs uppercase tracking-wider animate-in fade-in slide-in-from-bottom-2 duration-500">
+                  <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>Order Placed Successfully!</span>
+                </div>
+
+                {/* Personalized Heading */}
+                <div className="space-y-1 animate-in fade-in slide-in-from-bottom-3 duration-600">
+                  <h3 className="text-xl sm:text-2xl font-extrabold text-glow-navy tracking-tight">
+                    Thank You, {formData.name ? formData.name.split(' ')[0] : 'Radiant Customer'}!
+                  </h3>
+                  <p className="text-xs text-slate-500 max-w-xs mx-auto leading-relaxed">
+                    Your order is confirmed. We are packing your fresh Glow Finder serum for express dispatch.
+                  </p>
+                </div>
+
+                {/* Live Order Timeline Progress Animation */}
+                <div className="w-full p-3.5 bg-white rounded-2xl border border-slate-100 shadow-xs space-y-2 text-left animate-in fade-in slide-in-from-bottom-4 duration-700">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                    Order Status Progress
+                  </span>
+                  
+                  <div className="flex items-center justify-between text-xs font-semibold relative">
+                    <div className="flex flex-col items-center gap-1 z-10">
+                      <div className="w-6 h-6 rounded-full bg-emerald-500 text-white flex items-center justify-center text-[10px] font-bold shadow-xs">
+                        ✓
+                      </div>
+                      <span className="text-[10px] text-emerald-700 font-bold">Placed</span>
+                    </div>
+
+                    <div className="flex-1 h-1 bg-gradient-to-r from-emerald-500 to-amber-400 mx-1 rounded-full -mt-3"></div>
+
+                    <div className="flex flex-col items-center gap-1 z-10">
+                      <div className="w-6 h-6 rounded-full bg-amber-400 text-white flex items-center justify-center text-[10px] font-bold animate-pulse shadow-xs">
+                        📦
+                      </div>
+                      <span className="text-[10px] text-amber-700 font-bold">Packing</span>
+                    </div>
+
+                    <div className="flex-1 h-1 bg-slate-200 mx-1 rounded-full -mt-3"></div>
+
+                    <div className="flex flex-col items-center gap-1 z-10">
+                      <div className="w-6 h-6 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center text-[10px] font-bold border border-slate-200">
+                        🚚
+                      </div>
+                      <span className="text-[10px] text-slate-400">Delivery</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Order Receipt Details Card */}
+                <div className="w-full p-4 rounded-2xl bg-slate-50/80 border border-slate-100 text-left text-xs space-y-2 animate-in fade-in slide-in-from-bottom-5 duration-800">
+                  <div className="flex justify-between pb-2 border-b border-slate-200/80">
+                    <span className="text-slate-500">Order ID:</span>
+                    <span className="font-extrabold text-blue-600 font-mono tracking-wide">#{orderId}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-500">Items:</span>
+                    <span className="font-bold text-glow-navy">{totalQuantity}x Glow Finder™ Serum</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-500">Delivery To:</span>
+                    <span className="font-medium text-slate-700 truncate max-w-[180px]">{formData.city || formData.address}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-500">Payment:</span>
+                    <span className="font-semibold text-emerald-700">UPI / Online Confirmed</span>
+                  </div>
+                  <div className="flex justify-between pt-2 border-t border-slate-200/80 font-bold text-sm">
+                    <span>Grand Total:</span>
+                    <span className="text-glow-orange">₹{finalTotal}</span>
+                  </div>
+                </div>
+
               </div>
 
-              <div className="w-full p-4 rounded-2xl bg-slate-50 border border-slate-100 text-left text-xs space-y-2">
-                <div className="flex justify-between pb-2 border-b border-slate-200/80">
-                  <span className="text-slate-500">Order Number:</span>
-                  <span className="font-bold text-glow-navy">{orderId}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-500">Items:</span>
-                  <span className="font-semibold text-glow-navy">{totalQuantity}x TriActive Serum</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-500">Delivery Fee:</span>
-                  <span className="font-semibold text-glow-navy">₹{deliveryFee}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-500">Payment Mode:</span>
-                  <span className="font-semibold text-glow-navy">UPI / Online Payment</span>
-                </div>
-                <div className="flex justify-between pt-2 border-t border-slate-200/80 font-bold text-sm">
-                  <span>Amount to Pay:</span>
-                  <span className="text-glow-orange">₹{finalTotal}</span>
-                </div>
+              {/* Action Button */}
+              <div className="w-full pt-4 relative z-10">
+                <button
+                  onClick={onClose}
+                  className="w-full py-3.5 bg-glow-navy hover:bg-slate-800 text-white font-bold text-xs rounded-xl shadow-xs transition-all cursor-pointer transform hover:-translate-y-0.5"
+                >
+                  CONTINUE BROWSING STORE
+                </button>
               </div>
 
-              <button
-                onClick={onClose}
-                className="w-full py-3.5 bg-glow-navy hover:bg-slate-800 text-white font-bold text-xs rounded-xl shadow-xs transition-colors cursor-pointer"
-              >
-                CONTINUE BROWSING
-              </button>
             </div>
           )}
 
