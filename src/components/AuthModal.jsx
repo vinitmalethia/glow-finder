@@ -74,8 +74,17 @@ export default function AuthModal({ isOpen, onClose, initialView = 'login' }) {
       await loginWithGoogle();
       onClose();
     } catch (err) {
-      console.error(err);
-      setError('Google Sign-In was cancelled or failed. Please try again.');
+      console.error("Google Sign-In error:", err);
+      if (err.code === 'auth/unauthorized-domain') {
+        const currentDomain = window.location.hostname;
+        setError(`Domain not authorized: Please add "${currentDomain}" to Firebase Console -> Authentication -> Settings -> Authorized domains.`);
+      } else if (err.code === 'auth/popup-closed-by-user') {
+        setError('Sign-in popup was closed before completing login.');
+      } else if (err.code === 'auth/operation-not-allowed') {
+        setError('Google Sign-In is not enabled in Firebase Console. Please enable Google under Authentication -> Sign-in method.');
+      } else {
+        setError(err.message || 'Google Sign-In was cancelled or failed. Please try again.');
+      }
     }
     setLoading(false);
   };
