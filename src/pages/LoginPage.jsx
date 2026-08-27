@@ -6,7 +6,7 @@ import {
 import brandLogo from '../assets/glow-finder-logo.png';
 import { useAuth } from '../context/AuthContext';
 
-export default function LoginPage({ onNavigateHome, onLoginSuccess }) {
+export default function LoginPage({ onNavigateHome, onLoginSuccess, onNavigateAdmin }) {
   const [isSignUp, setIsSignUp] = useState(false);
   const [isForgotPassword, setIsForgotPassword] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -417,6 +417,18 @@ export default function LoginPage({ onNavigateHome, onLoginSuccess }) {
                   </button>
                 </p>
               )}
+            </div>
+
+            {/* Admin Portal Direct Access Button */}
+            <div className="pt-3 border-t border-slate-100/90 text-center">
+              <button
+                type="button"
+                onClick={onNavigateAdmin}
+                className="inline-flex items-center gap-1.5 py-1.5 px-3.5 rounded-full text-[11px] font-bold text-slate-500 hover:text-slate-800 bg-slate-100 hover:bg-slate-200/80 transition-colors cursor-pointer"
+              >
+                <Lock className="w-3 h-3 text-glow-orange" />
+                <span>Admin Portal Login</span>
+              </button>
             </div>
 
           </div>

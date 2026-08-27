@@ -18,12 +18,14 @@ import IngredientsPage from './pages/IngredientsPage';
 import RoutinePage from './pages/RoutinePage';
 import BenefitsPage from './pages/BenefitsPage';
 import LoginPage from './pages/LoginPage';
+import AdminDashboard from './pages/AdminDashboard';
 
 function MainApp() {
   const [activeTab, setActiveTab] = useState('home');
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isAccountModalOpen, setIsAccountModalOpen] = useState(false);
+  const [bannerText, setBannerText] = useState("Special Discount: Get Glow Finder at ₹559 (M.R.P. ₹699) + ₹39 Delivery Fee!");
 
   const [cartItems, setCartItems] = useState([
     {
@@ -77,6 +79,24 @@ function MainApp() {
 
   const totalCartCount = cartItems.reduce((acc, item) => acc + item.quantity, 0);
 
+  // If user is inside the Admin Dashboard, render full-screen Admin Portal layout
+  if (activeTab === 'admin') {
+    return (
+      <AdminDashboard
+        onLogout={() => {
+          setActiveTab('home');
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }}
+        onNavigateHome={() => {
+          setActiveTab('home');
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }}
+        bannerText={bannerText}
+        onUpdateBanner={(newText) => setBannerText(newText)}
+      />
+    );
+  }
+
   return (
     <div className="min-h-screen bg-white font-sans text-glow-navy selection:bg-glow-orange selection:text-white flex flex-col">
       {/* Top Banner Notice */}
@@ -84,7 +104,7 @@ function MainApp() {
         <span className="bg-glow-orange text-white text-[10px] uppercase font-bold px-2 py-0.5 rounded-full">
           SPECIAL OFFER
         </span>
-        <span>Special Discount: Get Glow Finder at ₹559 (M.R.P. ₹699) + ₹39 Delivery Fee!</span>
+        <span>{bannerText}</span>
       </div>
 
       {/* Navigation Bar */}
@@ -154,6 +174,10 @@ function MainApp() {
             }}
             onLoginSuccess={() => {
               setActiveTab('home');
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+            onNavigateAdmin={() => {
+              setActiveTab('admin');
               window.scrollTo({ top: 0, behavior: 'smooth' });
             }}
           />
