@@ -4,13 +4,13 @@ export default function FooterBar() {
   return (
     <footer className="bg-white border-t border-slate-100">
       
-      {/* 4 Columns Service Guarantees Bar */}
+      {/* 3 Columns Service Guarantees Bar (₹39 Delivery, Secure Payment, 24/7 Support) */}
       <div className="py-7 border-b border-slate-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8 items-center">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-8 items-center">
             
-            {/* Free Shipping */}
-            <div className="flex items-center gap-3.5 group">
+            {/* ₹39 Delivery */}
+            <div className="flex items-center gap-3.5 group justify-start sm:justify-center">
               <div className="w-10 h-10 flex items-center justify-center shrink-0 text-slate-700">
                 <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2" />
@@ -22,36 +22,16 @@ export default function FooterBar() {
               </div>
               <div className="flex flex-col text-left">
                 <h4 className="text-xs sm:text-sm font-bold text-glow-navy leading-tight">
-                  Free Shipping
+                  ₹39 Delivery
                 </h4>
                 <span className="text-[11px] sm:text-xs text-glow-slate mt-0.5 font-normal">
-                  On all orders
-                </span>
-              </div>
-            </div>
-
-            {/* Easy Returns */}
-            <div className="flex items-center gap-3.5 group">
-              <div className="w-10 h-10 flex items-center justify-center shrink-0 text-slate-700">
-                <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
-                  <path d="M3 3v5h5" />
-                  <path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16" />
-                  <path d="M16 21h5v-5" />
-                </svg>
-              </div>
-              <div className="flex flex-col text-left">
-                <h4 className="text-xs sm:text-sm font-bold text-glow-navy leading-tight">
-                  Easy Returns
-                </h4>
-                <span className="text-[11px] sm:text-xs text-glow-slate mt-0.5 font-normal">
-                  Hassle-free returns
+                  Affordable shipping across India
                 </span>
               </div>
             </div>
 
             {/* Secure Payment */}
-            <div className="flex items-center gap-3.5 group">
+            <div className="flex items-center gap-3.5 group justify-start sm:justify-center">
               <div className="w-10 h-10 flex items-center justify-center shrink-0 text-slate-700">
                 <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
                   <rect width="18" height="14" x="3" y="7" rx="2" />
@@ -71,7 +51,7 @@ export default function FooterBar() {
             </div>
 
             {/* 24/7 Support */}
-            <div className="flex items-center gap-3.5 group">
+            <div className="flex items-center gap-3.5 group justify-start sm:justify-center">
               <div className="w-10 h-10 flex items-center justify-center shrink-0 text-slate-700">
                 <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M3 18v-6a9 9 0 0 1 18 0v6" />

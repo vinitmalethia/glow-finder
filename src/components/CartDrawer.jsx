@@ -304,7 +304,7 @@ export default function CartDrawer({
 
                   <div className="flex items-center justify-center gap-1.5 text-[11px] text-slate-400 font-medium">
                     <ShieldCheck className="w-3.5 h-3.5 text-green-500" />
-                    <span>100% Genuine • COD Available • 7-Day Returns</span>
+                    <span>100% Genuine • COD Available • Express Dispatch Across India</span>
                   </div>
 
                 </div>
