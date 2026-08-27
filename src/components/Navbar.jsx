@@ -17,15 +17,15 @@ export default function Navbar({ activeTab, onSelectTab, cartCount, onOpenCart }
     <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-100 shadow-xs transition-all">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
         
-        {/* Brand Logo - Official Logo Sticker */}
+        {/* Brand Logo - New Official Logo */}
         <button 
           onClick={() => onSelectTab('home')}
-          className="flex items-center group text-left cursor-pointer transition-transform hover:opacity-90"
+          className="flex items-center group text-left cursor-pointer transition-transform hover:opacity-90 py-1"
         >
           <img
             src="/assets/glow-finder-logo-official.png"
             alt="Glow Finder TriActive Brightening Serum Official Logo"
-            className="h-10 sm:h-12 w-auto object-contain transition-transform duration-300 group-hover:scale-102"
+            className="h-12 sm:h-14 w-auto object-contain transition-transform duration-300 group-hover:scale-102"
           />
         </button>
 

@@ -99,7 +99,7 @@ export default function FooterBar() {
             <img
               src="/assets/glow-finder-logo-official.png"
               alt="Glow Finder Official Logo"
-              className="h-9 w-auto object-contain"
+              className="h-11 w-auto object-contain"
             />
             <span className="text-slate-400">|</span>
             <span>© {new Date().getFullYear()} Glow Finder Skincare. All rights reserved.</span>
