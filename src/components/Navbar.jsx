@@ -1,7 +1,27 @@
 import React, { useState } from 'react';
-import { User, ShoppingBag, Menu, X, LogIn, Package } from 'lucide-react';
+import { ShoppingBag, Menu, X, LogIn, ChevronDown, User } from 'lucide-react';
 import brandLogo from '../assets/glow-finder-logo.png';
 import { useAuth } from '../context/AuthContext';
+
+function UserAvatarBadge({ user, displayName, initial }) {
+  const [hasError, setHasError] = useState(false);
+
+  return (
+    <div className="w-6 h-6 rounded-full bg-glow-orange text-white text-[11px] font-extrabold flex items-center justify-center overflow-hidden shrink-0 shadow-2xs">
+      {user?.photoURL && !hasError ? (
+        <img
+          src={user.photoURL}
+          alt={displayName}
+          referrerPolicy="no-referrer"
+          onError={() => setHasError(true)}
+          className="w-full h-full object-cover rounded-full"
+        />
+      ) : (
+        <span className="leading-none select-none">{initial}</span>
+      )}
+    </div>
+  );
+}
 
 export default function Navbar({ 
   activeTab, 
@@ -69,19 +89,14 @@ export default function Navbar({
           {currentUser ? (
             <button 
               onClick={onOpenAccount}
-              className="flex items-center gap-2 py-1.5 px-3 bg-amber-50/70 hover:bg-amber-100/80 border border-amber-200/70 rounded-full transition-all cursor-pointer group shadow-xs"
+              className="flex items-center gap-2 py-1.5 pl-1.5 pr-3 bg-amber-50/80 hover:bg-amber-100/90 border border-amber-200/80 rounded-full transition-all cursor-pointer group shadow-2xs"
               title={`Logged in as ${displayName}`}
             >
-              <div className="w-6 h-6 rounded-full bg-glow-orange text-white text-[11px] font-bold flex items-center justify-center overflow-hidden shrink-0">
-                {currentUser.photoURL ? (
-                  <img src={currentUser.photoURL} alt={displayName} className="w-full h-full object-cover" />
-                ) : (
-                  initial
-                )}
-              </div>
+              <UserAvatarBadge user={currentUser} displayName={displayName} initial={initial} />
               <span className="text-xs font-bold text-glow-navy hidden sm:inline truncate max-w-[90px]">
                 {displayName.split(' ')[0]}
               </span>
+              <ChevronDown className="w-3.5 h-3.5 text-slate-400 group-hover:text-slate-600 transition-transform" />
             </button>
           ) : (
             <button 
@@ -147,10 +162,10 @@ export default function Navbar({
                 className="w-full py-2.5 px-4 rounded-xl bg-amber-50 border border-amber-200 text-glow-navy text-xs font-bold flex items-center justify-between"
               >
                 <div className="flex items-center gap-2">
-                  <User className="w-4 h-4 text-glow-orange" />
+                  <UserAvatarBadge user={currentUser} displayName={displayName} initial={initial} />
                   <span>My Account ({displayName})</span>
                 </div>
-                <span className="text-[10px] text-glow-orange uppercase">View Orders →</span>
+                <span className="text-[10px] text-glow-orange uppercase font-bold">View Orders →</span>
               </button>
             ) : (
               <button

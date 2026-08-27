@@ -66,11 +66,17 @@ export default function UserAccountModal({ isOpen, onClose }) {
         {/* Header */}
         <div className="flex items-center justify-between pb-5 border-b border-slate-100">
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-2xl bg-amber-50 text-glow-orange flex items-center justify-center font-extrabold text-lg border border-amber-200/60 shadow-xs">
+            <div className="w-12 h-12 rounded-2xl bg-amber-50 text-glow-orange flex items-center justify-center font-extrabold text-lg border border-amber-200/60 shadow-xs overflow-hidden">
               {currentUser.photoURL ? (
-                <img src={currentUser.photoURL} alt={displayName} className="w-full h-full rounded-2xl object-cover" />
+                <img 
+                  src={currentUser.photoURL} 
+                  alt={displayName} 
+                  referrerPolicy="no-referrer"
+                  onError={(e) => { e.target.style.display = 'none'; e.target.parentElement.innerText = initial; }}
+                  className="w-full h-full object-cover" 
+                />
               ) : (
-                initial
+                <span>{initial}</span>
               )}
             </div>
             <div>
