@@ -25,7 +25,7 @@ function MainApp() {
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isAccountModalOpen, setIsAccountModalOpen] = useState(false);
-  const [bannerText, setBannerText] = useState("Special Discount: Get Glow Finder at ₹559 (M.R.P. ₹699) + ₹39 Delivery Fee!");
+  const [bannerText, setBannerText] = useState("Special Discount: Get Glow Finder at ₹559 (M.R.P. ₹699) — Flat ₹140 OFF + ₹39 Delivery Fee!");
 
   const [cartItems, setCartItems] = useState([
     {

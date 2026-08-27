@@ -46,7 +46,7 @@ export default function AdminDashboard({ onLogout, onNavigateHome, bannerText, o
 
   // Live Announcement Banner State
   const [currentBanner, setCurrentBanner] = useState(
-    bannerText || "Special Discount: Get Glow Finder at ₹559 (M.R.P. ₹699) + ₹39 Delivery Fee!"
+    bannerText || "Special Discount: Get Glow Finder at ₹559 (M.R.P. ₹699) — Flat ₹140 OFF + ₹39 Delivery Fee!"
   );
 
   // Real-time Live Orders Listener (Firestore + Instant Local Storage Sync)
