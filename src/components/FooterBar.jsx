@@ -1,4 +1,5 @@
 import React from 'react';
+import { Mail, ShieldCheck, Truck, Headphones } from 'lucide-react';
 import brandLogo from '../assets/glow-finder-logo.png';
 
 export default function FooterBar() {
@@ -12,14 +13,8 @@ export default function FooterBar() {
             
             {/* ₹39 Delivery */}
             <div className="flex items-center gap-3.5 group justify-start sm:justify-center">
-              <div className="w-10 h-10 flex items-center justify-center shrink-0 text-slate-700">
-                <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2" />
-                  <path d="M15 18H9" />
-                  <path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.62l-3.24-4.05a1 1 0 0 0-.78-.38H14v10" />
-                  <circle cx="17" cy="18.5" r="2.5" />
-                  <circle cx="7" cy="18.5" r="2.5" />
-                </svg>
+              <div className="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center shrink-0 text-slate-700">
+                <Truck className="w-5 h-5 text-glow-orange" />
               </div>
               <div className="flex flex-col text-left">
                 <h4 className="text-xs sm:text-sm font-bold text-glow-navy leading-tight">
@@ -33,39 +28,35 @@ export default function FooterBar() {
 
             {/* Secure Payment */}
             <div className="flex items-center gap-3.5 group justify-start sm:justify-center">
-              <div className="w-10 h-10 flex items-center justify-center shrink-0 text-slate-700">
-                <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-                  <rect width="18" height="14" x="3" y="7" rx="2" />
-                  <path d="M12 11v3" />
-                  <circle cx="12" cy="12.5" r="0.5" fill="currentColor" />
-                  <path d="M8 7V5a4 4 0 0 1 8 0v2" />
-                </svg>
+              <div className="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center shrink-0 text-slate-700">
+                <ShieldCheck className="w-5 h-5 text-emerald-600" />
               </div>
               <div className="flex flex-col text-left">
                 <h4 className="text-xs sm:text-sm font-bold text-glow-navy leading-tight">
                   Secure Payment
                 </h4>
                 <span className="text-[11px] sm:text-xs text-glow-slate mt-0.5 font-normal">
-                  100% safe & secure
+                  100% safe & encrypted UPI / Cards
                 </span>
               </div>
             </div>
 
-            {/* 24/7 Support */}
+            {/* 24/7 Support with Email */}
             <div className="flex items-center gap-3.5 group justify-start sm:justify-center">
-              <div className="w-10 h-10 flex items-center justify-center shrink-0 text-slate-700">
-                <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M3 18v-6a9 9 0 0 1 18 0v6" />
-                  <path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z" />
-                </svg>
+              <div className="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center shrink-0 text-slate-700">
+                <Headphones className="w-5 h-5 text-blue-600" />
               </div>
               <div className="flex flex-col text-left">
                 <h4 className="text-xs sm:text-sm font-bold text-glow-navy leading-tight">
-                  24/7 Support
+                  24/7 Customer Support
                 </h4>
-                <span className="text-[11px] sm:text-xs text-glow-slate mt-0.5 font-normal">
-                  We're here to help
-                </span>
+                <a 
+                  href="mailto:info@glowfinder.com" 
+                  className="text-[11px] sm:text-xs text-glow-orange hover:underline font-bold mt-0.5 flex items-center gap-1"
+                >
+                  <Mail className="w-3 h-3" />
+                  info@glowfinder.com
+                </a>
               </div>
             </div>
 
@@ -73,22 +64,33 @@ export default function FooterBar() {
         </div>
       </div>
 
-      {/* Main Footer Copyright */}
+      {/* Main Footer Row */}
       <div className="py-8 bg-[#FAFCFF] text-glow-slate text-xs sm:text-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-6">
-          <div className="flex items-center gap-3">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-6">
+          <div className="flex flex-wrap items-center justify-center md:justify-start gap-3">
             <img
               src={brandLogo}
               alt="Glow Finder Logo"
               className="h-11 w-auto object-contain"
             />
-            <span className="text-slate-400">|</span>
-            <span>© {new Date().getFullYear()} Glow Finder Skincare. All rights reserved.</span>
+            <span className="text-slate-300 hidden sm:inline">|</span>
+            <span className="text-xs text-slate-500">
+              © {new Date().getFullYear()} Glow Finder Skincare. All rights reserved.
+            </span>
           </div>
-          <div className="flex items-center gap-6 text-glow-slate font-medium">
+
+          {/* Official Email & Links */}
+          <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-6 text-glow-slate font-medium text-xs">
+            <a 
+              href="mailto:info@glowfinder.com" 
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-50 border border-amber-200/80 text-glow-navy font-bold hover:bg-amber-100 hover:text-glow-orange transition-all shadow-2xs"
+            >
+              <Mail className="w-3.5 h-3.5 text-glow-orange" />
+              <span>info@glowfinder.com</span>
+            </a>
             <a href="#home" className="hover:text-glow-navy transition-colors">Privacy Policy</a>
             <a href="#home" className="hover:text-glow-navy transition-colors">Terms of Service</a>
-            <a href="#home" className="hover:text-glow-navy transition-colors">Contact Us</a>
+            <a href="mailto:info@glowfinder.com" className="hover:text-glow-navy transition-colors">Contact Support</a>
           </div>
         </div>
       </div>

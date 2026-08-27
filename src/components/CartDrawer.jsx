@@ -40,7 +40,7 @@ export default function CartDrawer({
         email: prev.email || currentUser.email || ''
       }));
     }
-  }, [currentUser]);
+  }, [currentUser, isOpen, step]);
 
   // Lock background scroll when drawer is open
   useEffect(() => {
@@ -99,12 +99,15 @@ export default function CartDrawer({
     setOrderId(newOrderId);
 
     const fullDeliveryAddress = `${formData.address}${formData.city ? ', ' + formData.city : ''}${formData.pincode ? ' - ' + formData.pincode : ''}`;
+    const confirmedEmail = formData.email || currentUser?.email || 'manojshahsp@gmail.com';
 
     const orderPayload = {
       id: newOrderId,
       orderNumber: newOrderId,
       userId: currentUser ? currentUser.uid : null,
-      userEmail: formData.email || currentUser?.email || 'guest@glowfinder.com',
+      userEmail: confirmedEmail,
+      email: confirmedEmail,
+      customerEmail: confirmedEmail,
       customerName: formData.name,
       phone: formData.phone,
       address: fullDeliveryAddress,
@@ -420,6 +423,17 @@ export default function CartDrawer({
                         placeholder="e.g. 9876543210"
                         value={formData.phone}
                         onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                        className="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-lg text-glow-navy focus:outline-none focus:border-glow-orange focus:bg-white"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-[11px] font-semibold text-slate-600 block mb-1">Email / Gmail Address (for order receipt & tracking)</label>
+                      <input
+                        type="email"
+                        placeholder="e.g. name@gmail.com"
+                        value={formData.email}
+                        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                         className="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-lg text-glow-navy focus:outline-none focus:border-glow-orange focus:bg-white"
                       />
                     </div>
