@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
   X, Trash2, ShoppingBag, ArrowRight, ShieldCheck, Truck, 
-  Tag, CheckCircle2, MapPin, CreditCard, ArrowLeft, Sparkles, Phone, User, Mail
+  Tag, CheckCircle2, MapPin, CreditCard, ArrowLeft, Sparkles, Phone, User, Mail, Lock, AlertCircle, LogIn
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
@@ -15,11 +15,20 @@ export default function CartDrawer({
   onRemoveItem,
   onAddItem 
 }) {
-  const { currentUser } = useAuth();
-  const [step, setStep] = useState('cart'); // 'cart' | 'checkout' | 'success'
+  const { currentUser, loginWithGoogle, login, signup } = useAuth();
+  const [step, setStep] = useState('cart'); // 'cart' | 'auth' | 'checkout' | 'success'
   const [couponCode, setCouponCode] = useState('');
   const [couponApplied, setCouponApplied] = useState(false);
   const [submittingOrder, setSubmittingOrder] = useState(false);
+  
+  // Auth state inside drawer
+  const [authMode, setAuthMode] = useState('login'); // 'login' | 'signup'
+  const [authEmail, setAuthEmail] = useState('');
+  const [authPassword, setAuthPassword] = useState('');
+  const [authName, setAuthName] = useState('');
+  const [authError, setAuthError] = useState('');
+  const [authLoading, setAuthLoading] = useState(false);
+
   const [formData, setFormData] = useState({
     name: currentUser?.displayName || '',
     email: currentUser?.email || '',
@@ -39,6 +48,9 @@ export default function CartDrawer({
         name: prev.name || currentUser.displayName || '',
         email: prev.email || currentUser.email || ''
       }));
+      if (step === 'auth') {
+        setStep('checkout');
+      }
     }
   }, [currentUser, isOpen, step]);
 
@@ -86,8 +98,63 @@ export default function CartDrawer({
     }
   };
 
+  const handleProceedToCheckout = () => {
+    if (!currentUser) {
+      setStep('auth');
+    } else {
+      setStep('checkout');
+    }
+  };
+
+  const handleDrawerGoogleLogin = async () => {
+    setAuthError('');
+    setAuthLoading(true);
+    try {
+      await loginWithGoogle();
+      setStep('checkout');
+    } catch (err) {
+      console.error("Drawer Google login error:", err);
+      setAuthError(err.message || 'Google Sign-In was cancelled or failed.');
+    }
+    setAuthLoading(false);
+  };
+
+  const handleDrawerEmailAuth = async (e) => {
+    e.preventDefault();
+    setAuthError('');
+    setAuthLoading(true);
+    try {
+      if (authMode === 'login') {
+        await login(authEmail, authPassword);
+      } else {
+        if (authPassword.length < 6) {
+          setAuthError('Password must be at least 6 characters.');
+          setAuthLoading(false);
+          return;
+        }
+        await signup(authEmail, authPassword, authName);
+      }
+      setStep('checkout');
+    } catch (err) {
+      console.error("Drawer email auth error:", err);
+      if (err.code === 'auth/invalid-credential' || err.code === 'auth/wrong-password' || err.code === 'auth/user-not-found') {
+        setAuthError('Invalid email or password. Please try again.');
+      } else if (err.code === 'auth/email-already-in-use') {
+        setAuthError('An account already exists with this email.');
+      } else {
+        setAuthError(err.message || 'Authentication failed. Please try again.');
+      }
+    }
+    setAuthLoading(false);
+  };
+
   const handlePlaceOrder = async (e) => {
     e.preventDefault();
+    if (!currentUser) {
+      alert('Please sign in before completing your order.');
+      setStep('auth');
+      return;
+    }
     if (!formData.name || !formData.phone || !formData.address || !formData.pincode) {
       alert('Please fill in your name, phone number, address, and pincode to proceed.');
       return;
@@ -183,8 +250,8 @@ export default function CartDrawer({
             <div className="flex items-center gap-2.5">
               {step !== 'cart' && step !== 'success' && (
                 <button
-                  onClick={() => setStep('cart')}
-                  className="p-1.5 -ml-1 text-slate-500 hover:text-slate-800 rounded-lg hover:bg-slate-200/60 transition-colors"
+                  onClick={() => setStep(step === 'checkout' && !currentUser ? 'auth' : 'cart')}
+                  className="p-1.5 -ml-1 text-slate-500 hover:text-slate-800 rounded-lg hover:bg-slate-200/60 transition-colors cursor-pointer"
                 >
                   <ArrowLeft className="w-4 h-4" />
                 </button>
@@ -195,11 +262,13 @@ export default function CartDrawer({
               <div>
                 <h2 className="text-sm sm:text-base font-bold text-glow-navy leading-tight">
                   {step === 'cart' && 'Your Shopping Bag'}
+                  {step === 'auth' && 'Sign In Required'}
                   {step === 'checkout' && 'Express Checkout'}
                   {step === 'success' && 'Order Confirmed!'}
                 </h2>
                 <span className="text-[11px] text-slate-500 font-medium">
                   {step === 'cart' && `${totalQuantity} ${totalQuantity === 1 ? 'item' : 'items'}`}
+                  {step === 'auth' && 'Please log in to place your order'}
                   {step === 'checkout' && `Total Payable: ₹${finalTotal}`}
                   {step === 'success' && `Order ID: ${orderId}`}
                 </span>
@@ -371,7 +440,7 @@ export default function CartDrawer({
 
                   {/* Proceed to Checkout Button */}
                   <button
-                    onClick={() => setStep('checkout')}
+                    onClick={handleProceedToCheckout}
                     className="w-full py-3.5 bg-glow-orange hover:bg-glow-orange-hover text-white font-bold text-sm rounded-xl shadow-glow-soft hover:shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer"
                   >
                     <span>PROCEED TO ORDER (₹{finalTotal})</span>
@@ -389,12 +458,172 @@ export default function CartDrawer({
           )}
 
           {/* =========================================================================
-              VIEW 2: EXPRESS CHECKOUT FORM
+              VIEW 2: MANDATORY SIGN IN SCREEN
+             ========================================================================= */}
+          {step === 'auth' && (
+            <div className="flex-1 overflow-y-auto p-4 sm:p-6 flex flex-col justify-between">
+              <div className="space-y-4">
+                
+                {/* Intro Header */}
+                <div className="text-center space-y-1.5 py-1">
+                  <div className="w-12 h-12 rounded-2xl bg-amber-50 text-glow-orange flex items-center justify-center mx-auto border border-amber-200/80 shadow-xs">
+                    <LogIn className="w-6 h-6" />
+                  </div>
+                  <h3 className="text-base font-extrabold text-glow-navy">
+                    {authMode === 'login' ? 'Sign In to Complete Order' : 'Create Account to Order'}
+                  </h3>
+                  <p className="text-xs text-slate-500 max-w-xs mx-auto">
+                    Sign in with your Google or email account to save delivery address, track live order status, and receive invoices.
+                  </p>
+                </div>
+
+                {/* Feedback Alerts */}
+                {authError && (
+                  <div className="p-3 bg-red-50 border border-red-200/80 rounded-xl flex items-center gap-2 text-xs text-red-700">
+                    <AlertCircle className="w-4 h-4 shrink-0 text-red-500" />
+                    <span>{authError}</span>
+                  </div>
+                )}
+
+                {/* Google 1-Click Button */}
+                <div className="space-y-3">
+                  <button
+                    type="button"
+                    onClick={handleDrawerGoogleLogin}
+                    disabled={authLoading}
+                    className="w-full py-3 px-4 border border-slate-200 hover:border-slate-300 rounded-xl bg-white hover:bg-slate-50 text-slate-800 font-bold text-xs transition-all flex items-center justify-center gap-3 shadow-xs cursor-pointer disabled:opacity-50"
+                  >
+                    <svg className="w-4 h-4" viewBox="0 0 24 24">
+                      <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                      <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                      <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
+                      <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
+                    </svg>
+                    <span>{authLoading ? 'Signing in...' : 'Continue with Google'}</span>
+                  </button>
+
+                  <div className="flex items-center gap-3">
+                    <div className="flex-1 h-px bg-slate-200" />
+                    <span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">or with email</span>
+                    <div className="flex-1 h-px bg-slate-200" />
+                  </div>
+                </div>
+
+                {/* Email / Password Form */}
+                <form onSubmit={handleDrawerEmailAuth} className="space-y-3">
+                  {authMode === 'signup' && (
+                    <div>
+                      <label className="text-[11px] font-semibold text-slate-600 block mb-1">Full Name</label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="e.g. Manoj Shah"
+                        value={authName}
+                        onChange={(e) => setAuthName(e.target.value)}
+                        className="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-lg text-glow-navy focus:outline-none focus:border-glow-orange focus:bg-white"
+                      />
+                    </div>
+                  )}
+
+                  <div>
+                    <label className="text-[11px] font-semibold text-slate-600 block mb-1">Email Address</label>
+                    <input
+                      type="email"
+                      required
+                      placeholder="name@gmail.com"
+                      value={authEmail}
+                      onChange={(e) => setAuthEmail(e.target.value)}
+                      className="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-lg text-glow-navy focus:outline-none focus:border-glow-orange focus:bg-white"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-[11px] font-semibold text-slate-600 block mb-1">Password</label>
+                    <input
+                      type="password"
+                      required
+                      placeholder="••••••••"
+                      value={authPassword}
+                      onChange={(e) => setAuthPassword(e.target.value)}
+                      className="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-lg text-glow-navy focus:outline-none focus:border-glow-orange focus:bg-white"
+                    />
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={authLoading}
+                    className="w-full py-3 bg-glow-orange hover:bg-glow-orange-hover text-white font-bold text-xs rounded-xl shadow-glow-soft hover:shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer mt-2 disabled:opacity-50"
+                  >
+                    <span>{authLoading ? 'Processing...' : authMode === 'login' ? 'SIGN IN & CONTINUE' : 'CREATE ACCOUNT & CONTINUE'}</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </button>
+                </form>
+
+                {/* Switch between login / signup */}
+                <div className="text-center text-xs text-slate-500 pt-1">
+                  {authMode === 'login' ? (
+                    <p>
+                      New customer?{' '}
+                      <button
+                        type="button"
+                        onClick={() => { setAuthMode('signup'); setAuthError(''); }}
+                        className="text-glow-orange font-bold hover:underline cursor-pointer ml-1"
+                      >
+                        Create an account
+                      </button>
+                    </p>
+                  ) : (
+                    <p>
+                      Already have an account?{' '}
+                      <button
+                        type="button"
+                        onClick={() => { setAuthMode('login'); setAuthError(''); }}
+                        className="text-glow-orange font-bold hover:underline cursor-pointer ml-1"
+                      >
+                        Sign in
+                      </button>
+                    </p>
+                  )}
+                </div>
+
+              </div>
+
+              {/* Back to Cart */}
+              <div className="pt-3 border-t border-slate-100 mt-3 text-center">
+                <button
+                  type="button"
+                  onClick={() => setStep('cart')}
+                  className="text-xs text-slate-400 hover:text-slate-700 font-semibold cursor-pointer"
+                >
+                  ← Return to Shopping Bag
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* =========================================================================
+              VIEW 3: EXPRESS CHECKOUT FORM
              ========================================================================= */}
           {step === 'checkout' && (
             <div className="flex-1 overflow-y-auto p-4 sm:p-5 flex flex-col justify-between">
               <form onSubmit={handlePlaceOrder} className="space-y-4">
                 
+                {/* Verified Logged In User Badge */}
+                <div className="p-3 bg-emerald-50/70 border border-emerald-200/80 rounded-xl flex items-center justify-between shadow-2xs">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-full bg-emerald-600 text-white font-bold flex items-center justify-center text-xs shadow-xs">
+                      {currentUser?.displayName?.[0]?.toUpperCase() || currentUser?.email?.[0]?.toUpperCase() || 'U'}
+                    </div>
+                    <div className="min-w-0">
+                      <span className="text-[10px] font-bold text-emerald-800 uppercase block tracking-wider">Logged In As</span>
+                      <p className="text-xs font-extrabold text-slate-900 truncate max-w-[200px]">{currentUser?.displayName || currentUser?.email}</p>
+                    </div>
+                  </div>
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                    ✓ Verified
+                  </span>
+                </div>
+
                 {/* Shipping Details */}
                 <div className="space-y-3">
                   <div className="flex items-center gap-1.5 text-xs font-bold text-glow-navy uppercase tracking-wider">
