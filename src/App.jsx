@@ -17,6 +17,7 @@ import AboutPage from './pages/AboutPage';
 import IngredientsPage from './pages/IngredientsPage';
 import RoutinePage from './pages/RoutinePage';
 import BenefitsPage from './pages/BenefitsPage';
+import LoginPage from './pages/LoginPage';
 
 function MainApp() {
   const [activeTab, setActiveTab] = useState('home');
@@ -95,7 +96,10 @@ function MainApp() {
         }}
         cartCount={totalCartCount}
         onOpenCart={() => setIsCartOpen(true)}
-        onOpenAuth={() => setIsAuthModalOpen(true)}
+        onOpenAuth={() => {
+          setActiveTab('login');
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }}
         onOpenAccount={() => setIsAccountModalOpen(true)}
       />
 
@@ -140,6 +144,20 @@ function MainApp() {
             <FAQSection />
           </div>
         )}
+
+        {/* Dedicated 2-Column Split Design LoginPage */}
+        {activeTab === 'login' && (
+          <LoginPage
+            onNavigateHome={() => {
+              setActiveTab('home');
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+            onLoginSuccess={() => {
+              setActiveTab('home');
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+          />
+        )}
       </main>
 
       {/* Footer & Guarantees */}
@@ -155,7 +173,7 @@ function MainApp() {
         onAddItem={handleAddToCart}
       />
 
-      {/* Firebase Authentication Modal */}
+      {/* Firebase Authentication Modal Fallback */}
       <AuthModal
         isOpen={isAuthModalOpen}
         onClose={() => setIsAuthModalOpen(false)}
