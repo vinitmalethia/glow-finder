@@ -1,9 +1,18 @@
 import React, { useState } from 'react';
-import { User, ShoppingBag, Menu, X } from 'lucide-react';
+import { User, ShoppingBag, Menu, X, LogIn, Package } from 'lucide-react';
 import brandLogo from '../assets/glow-finder-logo.png';
+import { useAuth } from '../context/AuthContext';
 
-export default function Navbar({ activeTab, onSelectTab, cartCount, onOpenCart }) {
+export default function Navbar({ 
+  activeTab, 
+  onSelectTab, 
+  cartCount, 
+  onOpenCart,
+  onOpenAuth,
+  onOpenAccount 
+}) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { currentUser } = useAuth();
 
   const navLinks = [
     { id: 'home', name: 'Home' },
@@ -13,6 +22,9 @@ export default function Navbar({ activeTab, onSelectTab, cartCount, onOpenCart }
     { id: 'reviews', name: 'Reviews' },
     { id: 'faq', name: 'FAQ' },
   ];
+
+  const displayName = currentUser?.displayName || currentUser?.email?.split('@')[0] || 'Member';
+  const initial = displayName.charAt(0).toUpperCase();
 
   return (
     <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-100 shadow-xs transition-all">
@@ -51,15 +63,37 @@ export default function Navbar({ activeTab, onSelectTab, cartCount, onOpenCart }
         </nav>
 
         {/* Right Side User & Cart Icons */}
-        <div className="flex items-center gap-3 sm:gap-4">
-          <button 
-            aria-label="User Account"
-            onClick={() => onSelectTab('about')}
-            className="p-2 text-slate-700 hover:text-glow-navy hover:bg-slate-50 rounded-full transition-colors hidden sm:flex cursor-pointer"
-          >
-            <User className="w-5 h-5 stroke-[1.75]" />
-          </button>
+        <div className="flex items-center gap-2.5 sm:gap-3">
+          
+          {/* User Account / Login Button */}
+          {currentUser ? (
+            <button 
+              onClick={onOpenAccount}
+              className="flex items-center gap-2 py-1.5 px-3 bg-amber-50/70 hover:bg-amber-100/80 border border-amber-200/70 rounded-full transition-all cursor-pointer group shadow-xs"
+              title={`Logged in as ${displayName}`}
+            >
+              <div className="w-6 h-6 rounded-full bg-glow-orange text-white text-[11px] font-bold flex items-center justify-center overflow-hidden shrink-0">
+                {currentUser.photoURL ? (
+                  <img src={currentUser.photoURL} alt={displayName} className="w-full h-full object-cover" />
+                ) : (
+                  initial
+                )}
+              </div>
+              <span className="text-xs font-bold text-glow-navy hidden sm:inline truncate max-w-[90px]">
+                {displayName.split(' ')[0]}
+              </span>
+            </button>
+          ) : (
+            <button 
+              onClick={onOpenAuth}
+              className="flex items-center gap-1.5 py-1.5 px-3 rounded-full text-xs font-bold text-slate-700 hover:text-glow-navy hover:bg-slate-100 border border-slate-200 transition-all cursor-pointer"
+            >
+              <LogIn className="w-3.5 h-3.5 text-glow-orange" />
+              <span>Sign In</span>
+            </button>
+          )}
 
+          {/* Shopping Bag Button */}
           <button
             onClick={onOpenCart}
             aria-label="Shopping Bag"
@@ -101,6 +135,36 @@ export default function Navbar({ activeTab, onSelectTab, cartCount, onOpenCart }
               {link.name}
             </button>
           ))}
+
+          {/* Mobile User Profile or Login CTA */}
+          <div className="pt-3 mt-2 border-t border-slate-100">
+            {currentUser ? (
+              <button
+                onClick={() => {
+                  onOpenAccount();
+                  setMobileMenuOpen(false);
+                }}
+                className="w-full py-2.5 px-4 rounded-xl bg-amber-50 border border-amber-200 text-glow-navy text-xs font-bold flex items-center justify-between"
+              >
+                <div className="flex items-center gap-2">
+                  <User className="w-4 h-4 text-glow-orange" />
+                  <span>My Account ({displayName})</span>
+                </div>
+                <span className="text-[10px] text-glow-orange uppercase">View Orders →</span>
+              </button>
+            ) : (
+              <button
+                onClick={() => {
+                  onOpenAuth();
+                  setMobileMenuOpen(false);
+                }}
+                className="w-full py-2.5 px-4 rounded-xl bg-glow-orange text-white text-xs font-bold flex items-center justify-center gap-2 shadow-xs"
+              >
+                <LogIn className="w-4 h-4" />
+                <span>Sign In / Create Account</span>
+              </button>
+            )}
+          </div>
         </div>
       )}
     </header>

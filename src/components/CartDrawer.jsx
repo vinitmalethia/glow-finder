@@ -1,8 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { 
   X, Trash2, ShoppingBag, ArrowRight, ShieldCheck, Truck, 
-  Tag, CheckCircle2, MapPin, CreditCard, ArrowLeft, Sparkles, Phone, User
+  Tag, CheckCircle2, MapPin, CreditCard, ArrowLeft, Sparkles, Phone, User, Mail
 } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
+import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { db } from '../firebase/config';
 
 export default function CartDrawer({ 
   isOpen, 
@@ -12,11 +15,14 @@ export default function CartDrawer({
   onRemoveItem,
   onAddItem 
 }) {
+  const { currentUser } = useAuth();
   const [step, setStep] = useState('cart'); // 'cart' | 'checkout' | 'success'
   const [couponCode, setCouponCode] = useState('');
   const [couponApplied, setCouponApplied] = useState(false);
+  const [submittingOrder, setSubmittingOrder] = useState(false);
   const [formData, setFormData] = useState({
-    name: '',
+    name: currentUser?.displayName || '',
+    email: currentUser?.email || '',
     phone: '',
     address: '',
     city: '',
@@ -24,6 +30,17 @@ export default function CartDrawer({
     paymentMethod: 'upi'
   });
   const [orderId, setOrderId] = useState('');
+
+  // Auto-populate user data if logged in
+  useEffect(() => {
+    if (currentUser) {
+      setFormData(prev => ({
+        ...prev,
+        name: prev.name || currentUser.displayName || '',
+        email: prev.email || currentUser.email || ''
+      }));
+    }
+  }, [currentUser]);
 
   // Lock background scroll when drawer is open
   useEffect(() => {
@@ -69,15 +86,46 @@ export default function CartDrawer({
     }
   };
 
-  const handlePlaceOrder = (e) => {
+  const handlePlaceOrder = async (e) => {
     e.preventDefault();
     if (!formData.name || !formData.phone || !formData.address || !formData.pincode) {
       alert('Please fill in your name, phone number, address, and pincode to proceed.');
       return;
     }
+    setSubmittingOrder(true);
     // Generate order ID
     const newOrderId = 'GF-' + Math.floor(100000 + Math.random() * 900000);
     setOrderId(newOrderId);
+
+    // Save order to Firestore backend
+    try {
+      await addDoc(collection(db, 'orders'), {
+        orderNumber: newOrderId,
+        userId: currentUser ? currentUser.uid : null,
+        userEmail: formData.email || currentUser?.email || 'guest@glowfinder.com',
+        customerName: formData.name,
+        phone: formData.phone,
+        address: formData.address,
+        city: formData.city,
+        pincode: formData.pincode,
+        items: cartItems.map(item => ({
+          id: item.id,
+          name: item.name,
+          quantity: item.quantity,
+          price: item.price
+        })),
+        totalQuantity,
+        subtotal,
+        deliveryFee,
+        finalTotal,
+        paymentMethod: 'UPI / Online Payment',
+        status: 'Confirmed & Packing',
+        createdAt: serverTimestamp()
+      });
+    } catch (err) {
+      console.warn("Could not save to Firestore (fallback to local order):", err);
+    }
+    setSubmittingOrder(false);
     setStep('success');
   };
 

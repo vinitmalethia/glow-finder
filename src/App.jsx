@@ -8,6 +8,9 @@ import PromoBanner from './components/PromoBanner';
 import FAQSection from './components/FAQSection';
 import FooterBar from './components/FooterBar';
 import CartDrawer from './components/CartDrawer';
+import AuthModal from './components/AuthModal';
+import UserAccountModal from './components/UserAccountModal';
+import { AuthProvider } from './context/AuthContext';
 
 // Multi-Page Views
 import AboutPage from './pages/AboutPage';
@@ -15,9 +18,12 @@ import IngredientsPage from './pages/IngredientsPage';
 import RoutinePage from './pages/RoutinePage';
 import BenefitsPage from './pages/BenefitsPage';
 
-export default function App() {
+function MainApp() {
   const [activeTab, setActiveTab] = useState('home');
   const [isCartOpen, setIsCartOpen] = useState(false);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [isAccountModalOpen, setIsAccountModalOpen] = useState(false);
+
   const [cartItems, setCartItems] = useState([
     {
       id: 1,
@@ -89,6 +95,8 @@ export default function App() {
         }}
         cartCount={totalCartCount}
         onOpenCart={() => setIsCartOpen(true)}
+        onOpenAuth={() => setIsAuthModalOpen(true)}
+        onOpenAccount={() => setIsAccountModalOpen(true)}
       />
 
       {/* Dynamic Multi-Page Router View */}
@@ -146,6 +154,26 @@ export default function App() {
         onRemoveItem={handleRemoveItem}
         onAddItem={handleAddToCart}
       />
+
+      {/* Firebase Authentication Modal */}
+      <AuthModal
+        isOpen={isAuthModalOpen}
+        onClose={() => setIsAuthModalOpen(false)}
+      />
+
+      {/* Firebase User Account & Orders Modal */}
+      <UserAccountModal
+        isOpen={isAccountModalOpen}
+        onClose={() => setIsAccountModalOpen(false)}
+      />
     </div>
+  );
+}
+
+export default function App() {
+  return (
+    <AuthProvider>
+      <MainApp />
+    </AuthProvider>
   );
 }
