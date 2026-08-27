@@ -1,4 +1,5 @@
 import React from 'react';
+import brandLogo from '../assets/glow-finder-logo.png';
 
 export default function FooterBar() {
   return (
@@ -77,8 +78,8 @@ export default function FooterBar() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-6">
           <div className="flex items-center gap-3">
             <img
-              src="/assets/glow-finder-logo-official.png"
-              alt="Glow Finder Official Logo"
+              src={brandLogo}
+              alt="Glow Finder Logo"
               className="h-11 w-auto object-contain"
             />
             <span className="text-slate-400">|</span>

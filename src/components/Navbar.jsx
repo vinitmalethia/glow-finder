@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { User, ShoppingBag, Menu, X } from 'lucide-react';
+import brandLogo from '../assets/glow-finder-logo.png';
 
 export default function Navbar({ activeTab, onSelectTab, cartCount, onOpenCart }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -23,8 +24,8 @@ export default function Navbar({ activeTab, onSelectTab, cartCount, onOpenCart }
           className="flex items-center group text-left cursor-pointer transition-transform hover:opacity-90 py-1"
         >
           <img
-            src="/assets/glow-finder-logo-official.png"
-            alt="Glow Finder TriActive Brightening Serum Official Logo"
+            src={brandLogo}
+            alt="Glow Finder Logo"
             className="h-12 sm:h-14 w-auto object-contain transition-transform duration-300 group-hover:scale-102"
           />
         </button>
