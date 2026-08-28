@@ -51,11 +51,11 @@ export default function FooterBar() {
                   24/7 Customer Support
                 </h4>
                 <a 
-                  href="mailto:info@glowfinder.com" 
+                  href="mailto:info@glowfinder.store" 
                   className="text-[11px] sm:text-xs text-glow-orange hover:underline font-bold mt-0.5 flex items-center gap-1"
                 >
                   <Mail className="w-3 h-3" />
-                  info@glowfinder.com
+                  info@glowfinder.store
                 </a>
               </div>
             </div>
@@ -75,22 +75,22 @@ export default function FooterBar() {
             />
             <span className="text-slate-300 hidden sm:inline">|</span>
             <span className="text-xs text-slate-500">
-              © {new Date().getFullYear()} Glow Finder Skincare. All rights reserved.
+              © {new Date().getFullYear()} Glow Finder. All Rights Reserved.
             </span>
           </div>
 
           {/* Official Email & Links */}
           <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-6 text-glow-slate font-medium text-xs">
             <a 
-              href="mailto:info@glowfinder.com" 
+              href="mailto:info@glowfinder.store" 
               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-50 border border-amber-200/80 text-glow-navy font-bold hover:bg-amber-100 hover:text-glow-orange transition-all shadow-2xs"
             >
               <Mail className="w-3.5 h-3.5 text-glow-orange" />
-              <span>info@glowfinder.com</span>
+              <span>info@glowfinder.store</span>
             </a>
             <a href="#home" className="hover:text-glow-navy transition-colors">Privacy Policy</a>
             <a href="#home" className="hover:text-glow-navy transition-colors">Terms of Service</a>
-            <a href="mailto:info@glowfinder.com" className="hover:text-glow-navy transition-colors">Contact Support</a>
+            <a href="mailto:info@glowfinder.store" className="hover:text-glow-navy transition-colors">Contact Support</a>
           </div>
         </div>
       </div>

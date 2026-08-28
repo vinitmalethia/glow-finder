@@ -1209,7 +1209,7 @@ export default function AdminDashboard({ onLogout, onNavigateHome, bannerText, o
                 </div>
                 <div>
                   <label className="text-slate-700 font-bold block mb-1">Support Email</label>
-                  <input type="email" defaultValue="support@glowfinder.com" className="w-full p-2.5 border rounded-xl" />
+                  <input type="email" defaultValue="info@glowfinder.store" className="w-full p-2.5 border rounded-xl" />
                 </div>
                 <div>
                   <label className="text-slate-700 font-bold block mb-1">Currency</label>
