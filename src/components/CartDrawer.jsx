@@ -148,6 +148,33 @@ export default function CartDrawer({
     setAuthLoading(false);
   };
 
+  const RAZORPAY_KEY_ID = 'rzp_live_TTeP43Qm16o3tX';
+
+  const saveOrderToFirestore = async (orderPayload, razorpayDetails = {}) => {
+    // Save to localStorage for instant admin visibility
+    try {
+      const existingLocal = JSON.parse(localStorage.getItem('glowfinder_orders') || '[]');
+      localStorage.setItem('glowfinder_orders', JSON.stringify([orderPayload, ...existingLocal]));
+      window.dispatchEvent(new Event('glowfinder_order_placed'));
+    } catch (err) {
+      console.warn("Local storage write error:", err);
+    }
+
+    // Async Firestore sync with Razorpay payment reference
+    try {
+      addDoc(collection(db, 'orders'), {
+        ...orderPayload,
+        razorpayPaymentId: razorpayDetails.razorpay_payment_id || null,
+        razorpayOrderId: razorpayDetails.razorpay_order_id || null,
+        createdAt: serverTimestamp()
+      }).catch(err => {
+        console.warn("Firestore background sync warning:", err);
+      });
+    } catch (err) {
+      console.warn("Firestore dispatch error:", err);
+    }
+  };
+
   const handlePlaceOrder = async (e) => {
     e.preventDefault();
     if (!currentUser) {
@@ -159,11 +186,9 @@ export default function CartDrawer({
       alert('Please fill in your name, phone number, address, and pincode to proceed.');
       return;
     }
-    setSubmittingOrder(true);
 
     // Generate unique order ID
     const newOrderId = 'GF-' + Math.floor(100000 + Math.random() * 900000);
-    setOrderId(newOrderId);
 
     const fullDeliveryAddress = `${formData.address}${formData.city ? ', ' + formData.city : ''}${formData.pincode ? ' - ' + formData.pincode : ''}`;
     const confirmedEmail = formData.email || currentUser?.email || 'manojshahsp@gmail.com';
@@ -192,36 +217,54 @@ export default function CartDrawer({
       subtotal,
       deliveryFee,
       finalTotal,
-      paymentMethod: 'UPI / Online Payment',
+      paymentMethod: 'Razorpay — UPI / Card / NetBanking',
       status: 'Confirmed',
       date: new Date().toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })
     };
 
-    // 1. Instant Local Storage Dispatch for Zero-Latency Admin updates
-    try {
-      const existingLocal = JSON.parse(localStorage.getItem('glowfinder_orders') || '[]');
-      localStorage.setItem('glowfinder_orders', JSON.stringify([orderPayload, ...existingLocal]));
-      window.dispatchEvent(new Event('glowfinder_order_placed'));
-    } catch (err) {
-      console.warn("Local storage write error:", err);
-    }
+    // Open Razorpay Checkout Modal
+    const options = {
+      key: RAZORPAY_KEY_ID,
+      amount: finalTotal * 100, // Razorpay expects amount in paise
+      currency: 'INR',
+      name: 'Glowfinder',
+      description: `${orderPayload.productName} × ${totalQuantity}`,
+      image: '/favicon.png',
+      prefill: {
+        name: formData.name,
+        email: confirmedEmail,
+        contact: formData.phone,
+      },
+      notes: {
+        order_id: newOrderId,
+        address: fullDeliveryAddress,
+      },
+      theme: {
+        color: '#EE730C',
+      },
+      handler: async (response) => {
+        // Payment successful — save order with Razorpay reference
+        setOrderId(newOrderId);
+        await saveOrderToFirestore(orderPayload, response);
+        setSubmittingOrder(false);
+        setStep('success');
+      },
+      modal: {
+        ondismiss: () => {
+          // User closed the Razorpay modal without paying
+          setSubmittingOrder(false);
+        },
+      },
+    };
 
-    // 2. Non-blocking Asynchronous Cloud Firestore Sync (Never blocks UI)
-    try {
-      addDoc(collection(db, 'orders'), {
-        ...orderPayload,
-        createdAt: serverTimestamp()
-      }).catch(err => {
-        console.warn("Firestore background sync warning:", err);
-      });
-    } catch (err) {
-      console.warn("Firestore dispatch error:", err);
-    }
-
-    // 3. Snappy 350ms tactile feedback delay before showing celebratory screen
-    await new Promise(resolve => setTimeout(resolve, 350));
-    setSubmittingOrder(false);
-    setStep('success');
+    setSubmittingOrder(true);
+    const rzp = new window.Razorpay(options);
+    rzp.on('payment.failed', (response) => {
+      console.error('Razorpay payment failed:', response.error);
+      alert(`Payment failed: ${response.error.description}. Please try again.`);
+      setSubmittingOrder(false);
+    });
+    rzp.open();
   };
 
   const defaultItem = {
@@ -754,12 +797,12 @@ export default function CartDrawer({
                   {submittingOrder ? (
                     <>
                       <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                      <span>CONFIRMING & SECURING ORDER...</span>
+                      <span>OPENING PAYMENT...</span>
                     </>
                   ) : (
                     <>
-                      <CheckCircle2 className="w-4 h-4" />
-                      <span>CONFIRM & PLACE ORDER (₹{finalTotal})</span>
+                      <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M3.5 7A1.5 1.5 0 0 1 5 5.5h14A1.5 1.5 0 0 1 20.5 7v1.5h-17V7zm0 3h17V17A1.5 1.5 0 0 1 19 18.5H5A1.5 1.5 0 0 1 3.5 17V10zm3 3.5a1 1 0 1 0 0 2h2a1 1 0 1 0 0-2h-2z"/></svg>
+                      <span>PAY ₹{finalTotal} WITH RAZORPAY</span>
                     </>
                   )}
                 </button>
