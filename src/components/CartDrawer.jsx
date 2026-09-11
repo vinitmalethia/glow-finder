@@ -148,7 +148,7 @@ export default function CartDrawer({
     setAuthLoading(false);
   };
 
-  const RAZORPAY_KEY_ID = 'rzp_live_TTeP43Qm16o3tX';
+  const RAZORPAY_KEY_ID = import.meta.env.VITE_RAZORPAY_KEY_ID || '';
 
   const saveOrderToFirestore = async (orderPayload, razorpayDetails = {}) => {
     // Save to localStorage for instant admin visibility
@@ -191,7 +191,7 @@ export default function CartDrawer({
     const newOrderId = 'GF-' + Math.floor(100000 + Math.random() * 900000);
 
     const fullDeliveryAddress = `${formData.address}${formData.city ? ', ' + formData.city : ''}${formData.pincode ? ' - ' + formData.pincode : ''}`;
-    const confirmedEmail = formData.email || currentUser?.email || 'manojshahsp@gmail.com';
+    const confirmedEmail = formData.email || currentUser?.email || 'customer@glowfinder.store';
 
     const orderPayload = {
       id: newOrderId,
@@ -560,7 +560,7 @@ export default function CartDrawer({
                       <input
                         type="text"
                         required
-                        placeholder="e.g. Manoj Shah"
+                        placeholder="e.g. Ananya Sharma"
                         value={authName}
                         onChange={(e) => setAuthName(e.target.value)}
                         className="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-lg text-glow-navy focus:outline-none focus:border-glow-orange focus:bg-white"

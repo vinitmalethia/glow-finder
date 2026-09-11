@@ -75,8 +75,12 @@ export default function LoginPage({ onNavigateHome, onLoginSuccess, onNavigateAd
     setError('');
     setMessage('');
 
-    const validId = adminId.trim().toLowerCase() === 'sachinsingh' || adminId.trim().toLowerCase() === 'sachinsingh@glowfinder.com';
-    const validPass = adminPassword === 'sachinjammu';
+    const expectedAdminId = (import.meta.env.VITE_ADMIN_ID || 'admin').toLowerCase();
+    const expectedAdminPass = import.meta.env.VITE_ADMIN_PASS || 'admin';
+    const inputId = adminId.trim().toLowerCase();
+
+    const validId = inputId === expectedAdminId || inputId === `${expectedAdminId}@glowfinder.com`;
+    const validPass = adminPassword === expectedAdminPass;
 
     if (validId && validPass) {
       setMessage('Admin credentials verified! Redirecting to dashboard...');
@@ -229,7 +233,7 @@ export default function LoginPage({ onNavigateHome, onLoginSuccess, onNavigateAd
           <div className="w-full max-w-md bg-white rounded-[2rem] sm:rounded-[2.5rem] shadow-xl border border-slate-100 p-6 sm:p-10 space-y-6">
             
             {/* =====================================================================
-                VIEW A: ADMIN PORTAL LOGIN (id: sachinsingh, pass: sachinjammu)
+                VIEW A: ADMIN PORTAL LOGIN
                ===================================================================== */}
             {isAdminLogin ? (
               <div className="space-y-6">
@@ -273,7 +277,7 @@ export default function LoginPage({ onNavigateHome, onLoginSuccess, onNavigateAd
                       <input
                         type="text"
                         required
-                        placeholder="e.g. sachinsingh"
+                        placeholder="Enter your Admin ID"
                         value={adminId}
                         onChange={(e) => setAdminId(e.target.value)}
                         className="w-full pl-11 pr-4 py-3 text-xs sm:text-sm bg-white border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:border-slate-900 focus:ring-2 focus:ring-slate-900/10 transition-all"

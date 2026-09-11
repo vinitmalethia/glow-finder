@@ -3,15 +3,15 @@ import { getAnalytics, isSupported } from "firebase/analytics";
 import { getAuth, GoogleAuthProvider } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 
-// Your web app's Firebase configuration
+// Your web app's Firebase configuration read securely from environment variables
 const firebaseConfig = {
-  apiKey: "AIzaSyAAR1Kas6NOiNkxq-uUY4W_Drr-M29woeI",
-  authDomain: "glow-finder-9fa86.firebaseapp.com",
-  projectId: "glow-finder-9fa86",
-  storageBucket: "glow-finder-9fa86.firebasestorage.app",
-  messagingSenderId: "801064485111",
-  appId: "1:801064485111:web:1f801294a86c58b17693f2",
-  measurementId: "G-0GVHXPNM57"
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "AIzaSyAAR1Kas6NOiNkxq-uUY4W_Drr-M29woeI",
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "glow-finder-9fa86.firebaseapp.com",
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "glow-finder-9fa86",
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "glow-finder-9fa86.firebasestorage.app",
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "801064485111",
+  appId: import.meta.env.VITE_FIREBASE_APP_ID || "1:801064485111:web:1f801294a86c58b17693f2",
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID || "G-0GVHXPNM57"
 };
 
 // Initialize Firebase

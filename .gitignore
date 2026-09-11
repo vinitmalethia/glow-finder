@@ -25,3 +25,11 @@ dist-ssr
 
 # Temporary processing scripts
 *.tmp
+
+# Environment variables & secrets (Never commit to git)
+.env
+.env.local
+.env.*.local
+.env.production
+.env.development
+*.env
