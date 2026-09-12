@@ -36,6 +36,7 @@ export default function Navbar({
 
   const navLinks = [
     { id: 'home', name: 'Home' },
+    { id: 'upcoming', name: 'Coming Soon', isNew: true },
     { id: 'about', name: 'About Us' },
     { id: 'ingredients', name: 'Ingredients' },
     { id: 'benefits', name: 'Benefits' },
@@ -70,13 +71,18 @@ export default function Navbar({
               <button
                 key={link.id}
                 onClick={() => onSelectTab(link.id)}
-                className={`text-sm tracking-wide relative py-1 cursor-pointer font-medium transition-colors duration-200 group ${
+                className={`text-sm tracking-wide relative py-1 cursor-pointer font-medium transition-colors duration-200 group flex items-center gap-1.5 ${
                   isActive
                     ? 'text-glow-navy font-bold after:absolute after:bottom-[-2px] after:left-0 after:w-full after:h-[2px] after:bg-glow-orange after:rounded-full'
                     : 'text-slate-600 hover:text-glow-navy after:absolute after:bottom-[-2px] after:left-0 after:w-0 hover:after:w-full after:h-[2px] after:bg-glow-orange after:rounded-full after:transition-all after:duration-300 after:ease-out'
                 }`}
               >
-                {link.name}
+                <span>{link.name}</span>
+                {link.isNew && (
+                  <span className="px-1.5 py-0.5 rounded-full text-[9px] font-extrabold uppercase bg-amber-100 text-glow-orange border border-amber-200 tracking-wider">
+                    New
+                  </span>
+                )}
               </button>
             );
           })}
@@ -141,13 +147,18 @@ export default function Navbar({
                 onSelectTab(link.id);
                 setMobileMenuOpen(false);
               }}
-              className={`w-full text-left px-4 py-2.5 rounded-xl text-sm font-medium transition-colors cursor-pointer ${
+              className={`w-full text-left px-4 py-2.5 rounded-xl text-sm font-medium transition-colors cursor-pointer flex items-center justify-between ${
                 activeTab === link.id
                   ? 'bg-glow-orange-light text-glow-orange font-bold'
                   : 'text-slate-700 hover:bg-slate-50'
               }`}
             >
-              {link.name}
+              <span>{link.name}</span>
+              {link.isNew && (
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase bg-amber-100 text-glow-orange border border-amber-200">
+                  Coming Soon
+                </span>
+              )}
             </button>
           ))}
 

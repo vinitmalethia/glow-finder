@@ -6,8 +6,10 @@ export default function RoutinePage({ onAddToCart }) {
     {
       number: "01",
       title: "Cleanser",
-      subtitle: "Purify & Prep",
-      description: "Start with a gentle hydrating cleanser to remove surface dirt, oil, and impurities without stripping your natural moisture barrier.",
+      brand: "Glow Finder™ FreshGlow Face Wash",
+      status: "Coming Soon",
+      subtitle: "Purify & Prep with Vitamin C & Green Tea",
+      description: "Start with FreshGlow Face Wash to deeply cleanse pores and remove surface impurities without stripping natural moisture.",
       highlight: false,
     },
     {
@@ -20,16 +22,19 @@ export default function RoutinePage({ onAddToCart }) {
     {
       number: "03",
       title: "Serum",
-      brand: "Glow Finder™ TriActive",
-      subtitle: "Targeted Brightening Treatment",
-      description: "Dispense 2–3 drops of Glow Finder TriActive Serum onto cleansed face & neck. Use morning & evening before moisturizer.",
+      brand: "Glow Finder™ TriActive Brightening Serum",
+      status: "Available Now",
+      subtitle: "Targeted Brightening Treatment (3% Vit C + 5% Niacinamide + 2% Alpha Arbutin)",
+      description: "Dispense 2–3 drops of Glow Finder TriActive Serum onto cleansed face & neck. Clinically fades spots and boosts radiance.",
       highlight: true,
     },
     {
       number: "04",
-      title: "Sunscreen / Moisturizer",
-      subtitle: "Lock & Protect",
-      description: "Seal in active ingredients with your favorite light moisturizer. Always follow with sunscreen in daytime.",
+      title: "Moisturizer & Sunscreen",
+      brand: "HydraGlow Moisturiser & SunGlow SPF 50",
+      status: "Coming Soon",
+      subtitle: "Hydrate & Shield against UVA/UVB",
+      description: "Seal in hydration with HydraGlow Barrier Moisturiser, and complete morning routines with SunGlow SPF 50 PA+++ invisible broad-spectrum shield.",
       highlight: false,
     },
   ];

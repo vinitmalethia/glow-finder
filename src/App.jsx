@@ -10,6 +10,7 @@ import FooterBar from './components/FooterBar';
 import CartDrawer from './components/CartDrawer';
 import AuthModal from './components/AuthModal';
 import UserAccountModal from './components/UserAccountModal';
+import UpcomingProducts from './components/UpcomingProducts';
 import { AuthProvider } from './context/AuthContext';
 
 // Multi-Page Views
@@ -111,6 +112,14 @@ function MainApp() {
       <Navbar
         activeTab={activeTab}
         onSelectTab={(tab) => {
+          if (tab === 'upcoming') {
+            setActiveTab('home');
+            setTimeout(() => {
+              const el = document.getElementById('upcoming');
+              if (el) el.scrollIntoView({ behavior: 'smooth' });
+            }, 100);
+            return;
+          }
           setActiveTab(tab);
           window.scrollTo({ top: 0, behavior: 'smooth' });
         }}
@@ -129,6 +138,7 @@ function MainApp() {
           <>
             <Hero onAddToCart={handleAddToCart} />
             <TrustBar />
+            <UpcomingProducts onShopSerum={handleAddToCart} />
             <Ingredients />
             <Testimonials />
             <PromoBanner onAddToCart={handleAddToCart} />
