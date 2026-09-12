@@ -62,6 +62,8 @@ export default function LoginPage({ onNavigateHome, onLoginSuccess, onNavigateAd
         setError('Password is too weak. Please use at least 6 characters.');
       } else if (err.code === 'auth/invalid-email') {
         setError('Please enter a valid email address.');
+      } else if (err.code === 'auth/operation-not-allowed') {
+        setError('Email/Password sign-up is disabled in Firebase Console. Please enable "Email/Password" under Authentication -> Sign-in method.');
       } else {
         setError(err.message || 'Authentication failed. Please try again.');
       }

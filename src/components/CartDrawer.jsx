@@ -141,6 +141,8 @@ export default function CartDrawer({
         setAuthError('Invalid email or password. Please try again.');
       } else if (err.code === 'auth/email-already-in-use') {
         setAuthError('An account already exists with this email.');
+      } else if (err.code === 'auth/operation-not-allowed') {
+        setAuthError('Email/Password sign-up is disabled in Firebase Console. Please enable "Email/Password" under Authentication -> Sign-in method.');
       } else {
         setAuthError(err.message || 'Authentication failed. Please try again.');
       }
